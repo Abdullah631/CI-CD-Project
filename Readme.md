@@ -131,21 +131,6 @@ This iterative approach supports continuous feedback and adaptability — crucia
 
 ---
 
-## 🧾 License
 
-This project is developed as part of the **Final Year Design Project (FYDP)**  
-for the **Faculty of Computing and Information Technology**,  
-**University of the Punjab, Lahore**.
-
-All rights reserved © 2025 RemoteHire.io Team.
-
----
-
-## 🌐 Links
-
-📧 Contact: [fydp.dse@pucit.edu.pk](mailto:fydp.dse@pucit.edu.pk)  
-🏫 [PUCIT Official Website](http://www.pucit.edu.pk)
-
----
 
 > _"Empowering organizations to hire smarter, faster, and safer — with AI."_
