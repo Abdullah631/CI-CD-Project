@@ -1,11 +1,20 @@
 :root {
+  --bg: #ffffff;
+  --text: #213547;
+  --muted: #6b7280;
+  --card-bg: #ffffff;
+  --btn-bg: #f9f9f9;
+  --btn-border: transparent;
+  --input-bg: #ffffff;
+  --input-border: #e5e7eb;
+
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: var(--text);
+  background-color: var(--bg);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -22,10 +31,14 @@ a:hover {
   color: #535bf2;
 }
 
+html, body, #root {
+  width: 100%;
+  height: 100%;
+}
+
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  display: block;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -37,14 +50,14 @@ h1 {
 
 button {
   border-radius: 8px;
-  border: 1px solid transparent;
+  border: 1px solid var(--btn-border);
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--btn-bg);
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: border-color 0.25s, background-color 0.2s;
 }
 button:hover {
   border-color: #646cff;
@@ -54,15 +67,54 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+:root {
+  /* Light mode defaults are defined in :root variables above. */
 }
+
+/* Dark theme variables override */
+.dark {
+  --bg: #071025;
+  --text: #e6eef8;
+  --muted: #9aa4b2;
+  --card-bg: #0f1724;
+  --btn-bg: #0b1220;
+  --btn-border: rgba(255,255,255,0.04);
+  --input-bg: #071425;
+  --input-border: #1f2937;
+}
+
+/* Dark mode overrides for Tailwind utility classes used in the app.
+   This provides a global dark theme without changing all markup to use
+   Tailwind's `dark:` variants. The `document.documentElement` will get
+   the `dark` class when dark mode is enabled. */
+.dark body { background-color: var(--bg); color: var(--text); }
+.dark .bg-white { background-color: var(--card-bg) !important; }
+.dark .bg-slate-50 { background-color: var(--bg) !important; }
+.dark .bg-gray-100 { background-color: #071825 !important; }
+.dark .text-gray-900 { color: var(--text) !important; }
+.dark .text-gray-600 { color: var(--muted) !important; }
+.dark .border-gray-200 { border-color: var(--input-border) !important; }
+.dark .hover\:bg-gray-100:hover { background-color: rgba(255,255,255,0.02) !important; }
+.dark .bg-indigo-600 { background-color: #4f46e5 !important; }
+.dark .text-white { color: #fff !important; }
+.dark .bg-purple-100 { background-color: #221933 !important; }
+.dark .text-purple-600 { color: #c4b5fd !important; }
+.dark .bg-blue-100 { background-color: #172554 !important; }
+.dark .text-blue-600 { color: #93c5fd !important; }
+.dark .bg-gray-50 { background-color: #061225 !important; }
+
+/* Form controls in dark mode */
+.dark input,
+.dark textarea,
+.dark select,
+.dark .p-2,
+.dark .p-3,
+.dark .rounded-md,
+.dark .rounded-lg {
+  background-color: var(--input-bg) !important;
+  color: var(--text) !important;
+  border-color: var(--input-border) !important;
+}
+
+/* Buttons should use variable backgrounds */
+.dark button { background-color: var(--btn-bg) !important; border-color: var(--btn-border) !important; color: var(--text); }

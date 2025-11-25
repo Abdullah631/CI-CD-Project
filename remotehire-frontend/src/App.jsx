@@ -5,8 +5,34 @@ import { SignInPage } from "./pages/SignInPage";
 import { SignUpPage } from "./pages/SignUpPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import JobPostsPage from "./pages/JobPostsPage";
+import FindJobsPage from "./pages/FindJobsPage";
 
 export const App = () => {
+  const [darkMode, setDarkMode] = useState(() => {
+    const stored = localStorage.getItem('theme');
+    if (stored) return stored === 'dark';
+    // default to system preference
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+    try {
+      window.dispatchEvent(new CustomEvent('themeChanged', { detail: { darkMode } }));
+    } catch (e) {}
+  }, [darkMode]);
+
+  useEffect(() => {
+    const handler = () => setDarkMode((v) => !v);
+    window.addEventListener('toggleTheme', handler);
+    return () => window.removeEventListener('toggleTheme', handler);
+  }, []);
   const [currentPath, setCurrentPath] = useState(
     window.location.hash.slice(1) || "/"
   );
@@ -39,6 +65,10 @@ export const App = () => {
       page = <JobPostsPage />;
       pageContainerClass = "bg-slate-50";
       break;
+    case "/find-jobs":
+      page = <FindJobsPage />;
+      pageContainerClass = "bg-slate-50";
+      break;
     default:
       page = <LandingPage />;
       break;
@@ -46,7 +76,9 @@ export const App = () => {
 
   return (
     <div className={`font-sans ${pageContainerClass}`}>
-      {currentPath !== "/dashboard" && <Header />}
+      {currentPath !== "/dashboard" && (
+        <Header darkMode={darkMode} toggleDarkMode={() => setDarkMode((v) => !v)} />
+      )}
       <main>{page}</main>
     </div>
   );

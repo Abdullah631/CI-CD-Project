@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { GoogleIcon, GitHubIcon } from "../components/Icons";
 
@@ -74,6 +74,31 @@ export const SignInPage = () => {
     }
   };
 
+  useEffect(() => {
+    // If backend redirected back with token in the hash (e.g. #/signin?token=..), capture it
+    try {
+      const hash = window.location.hash || '';
+      const parts = hash.split('?');
+      if (parts.length > 1) {
+        const params = new URLSearchParams(parts[1]);
+        const token = params.get('token');
+        const username = params.get('username');
+        const role = params.get('role');
+        if (token) {
+          // persist and navigate to dashboard
+          localStorage.setItem('token', token);
+          const userData = { username: username || 'user', role: role || 'candidate' };
+          localStorage.setItem('user', JSON.stringify(userData));
+          // Remove token params from hash to avoid leakage
+          window.location.hash = '/#/dashboard';
+          window.location.href = '/#/dashboard';
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   return (
     <div className="min-h-[calc(100vh-65px)] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg">
@@ -112,7 +137,11 @@ export const SignInPage = () => {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm mt-1"
+                className="appearance-none rounded-md relative block w-full px-3 py-2 
+bg-white text-black placeholder-gray-400 
+border border-gray-300 
+focus:outline-none focus:ring-blue-500 focus:border-blue-500 
+focus:z-10 sm:text-sm mt-1"
                 placeholder="your_username"
               />
             </div>
@@ -139,7 +168,12 @@ export const SignInPage = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm mt-1"
+                className="appearance-none rounded-md relative block w-full px-3 py-2 
+bg-white text-black placeholder-gray-400 
+border border-gray-300 
+focus:outline-none focus:ring-blue-500 focus:border-blue-500 
+focus:z-10 sm:text-sm mt-1"
+
               />
             </div>
           </div>
@@ -162,10 +196,16 @@ export const SignInPage = () => {
           <div className="flex-grow border-t border-gray-300"></div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <button className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+          <button
+            onClick={() => { window.location.href = 'http://127.0.0.1:8000/api/auth/google/login/'; }}
+            className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
             <GoogleIcon /> Google
           </button>
-          <button className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+          <button
+            onClick={() => { window.location.href = 'http://127.0.0.1:8000/api/auth/github/login/'; }}
+            className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
             <GitHubIcon /> GitHub
           </button>
         </div>

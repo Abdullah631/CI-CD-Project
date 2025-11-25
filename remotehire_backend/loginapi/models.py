@@ -25,3 +25,12 @@ class Job(models.Model):
     def __str__(self):
         return f"{self.title} ({self.posted_by})"
         return f"{self.title} ({self.posted_by})"
+
+
+class Application(models.Model):
+    job = models.ForeignKey(Job, related_name='applications', on_delete=models.CASCADE)
+    applicant = models.ForeignKey(User, related_name='applications', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Application: {self.applicant} -> {self.job}"

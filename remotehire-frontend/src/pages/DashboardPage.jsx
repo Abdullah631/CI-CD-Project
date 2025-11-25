@@ -10,10 +10,22 @@ import {
   SettingsIcon,
   LogoutIcon,
 } from "../components/Icons";
+import { MoonIcon } from "../components/Icons";
 
 export const DashboardPage = () => {
   const [userRole, setUserRole] = useState("candidate");
   const [userName, setUserName] = useState("");
+  const [activeJobsCount, setActiveJobsCount] = useState(0);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [jobsError, setJobsError] = useState(null);
+  const [activeCandidatesCount, setActiveCandidatesCount] = useState(0);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [candidatesError, setCandidatesError] = useState(null);
+  const [darkModeLocal, setDarkModeLocal] = useState(() => {
+    const stored = localStorage.getItem('theme');
+    if (stored) return stored === 'dark';
+    return document.documentElement.classList.contains('dark');
+  });
 
   useEffect(() => {
     // Get user data from localStorage
@@ -31,6 +43,166 @@ export const DashboardPage = () => {
       window.location.href = "/#/signin";
     }
   }, []);
+
+  useEffect(() => {
+    // Fetch recruiter's jobs and compute active jobs count
+    if (userRole !== 'recruiter') return;
+    let aborted = false;
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setActiveJobsCount(0);
+      return;
+    }
+    setJobsLoading(true);
+    setJobsError(null);
+    fetch('http://localhost:8000/api/recruiter/jobs/', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`API error: ${res.status} ${text}`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const active = data.filter((j) => (j.status || '').toLowerCase() === 'active').length;
+          setActiveJobsCount(active);
+        } else {
+          setActiveJobsCount(0);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching recruiter jobs:', err);
+        setJobsError(err.message || 'Failed to load jobs');
+        if (!aborted) setActiveJobsCount(0);
+      })
+      .finally(() => { if (!aborted) setJobsLoading(false); });
+  }, [userRole]);
+
+
+  // Listen for jobs updates from other pages/components and re-fetch
+  useEffect(() => {
+    const fetchActiveJobs = () => {
+      if (userRole !== 'recruiter') return;
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setActiveJobsCount(0);
+        return;
+      }
+      setJobsLoading(true);
+      setJobsError(null);
+      fetch('http://localhost:8000/api/recruiter/jobs/', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`API error: ${res.status} ${text}`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (Array.isArray(data)) {
+            const active = data.filter((j) => (j.status || '').toLowerCase() === 'active').length;
+            setActiveJobsCount(active);
+          } else {
+            setActiveJobsCount(0);
+          }
+        })
+        .catch((err) => {
+          console.error('Error fetching recruiter jobs:', err);
+          setJobsError(err.message || 'Failed to load jobs');
+          setActiveJobsCount(0);
+        })
+        .finally(() => setJobsLoading(false));
+    };
+
+    const handler = () => fetchActiveJobs();
+    const storageHandler = (e) => {
+      if (e.key === 'jobs_updated') fetchActiveJobs();
+    };
+
+    window.addEventListener('jobsUpdated', handler);
+    window.addEventListener('storage', storageHandler);
+
+    // cleanup
+    return () => {
+      window.removeEventListener('jobsUpdated', handler);
+      window.removeEventListener('storage', storageHandler);
+    };
+  }, [userRole]);
+
+  // Listen for theme changes so we can update the icon in this page
+  useEffect(() => {
+    const handler = (e) => {
+      // themeChanged detail has { darkMode }
+      try {
+        const dm = e?.detail?.darkMode;
+        if (typeof dm === 'boolean') setDarkModeLocal(dm);
+        else setDarkModeLocal(document.documentElement.classList.contains('dark'));
+      } catch (err) {
+        setDarkModeLocal(document.documentElement.classList.contains('dark'));
+      }
+    };
+    window.addEventListener('themeChanged', handler);
+    // Also listen for toggle events in case this page triggers toggle
+    const toggleHandler = () => setDarkModeLocal((v) => !v);
+    window.addEventListener('toggleTheme', toggleHandler);
+    return () => {
+      window.removeEventListener('themeChanged', handler);
+      window.removeEventListener('toggleTheme', toggleHandler);
+    };
+  }, []);
+
+
+  // Fetch active candidates count (recruiter view)
+  useEffect(() => {
+    if (userRole !== 'recruiter') return;
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setActiveCandidatesCount(0);
+      return;
+    }
+    setCandidatesLoading(true);
+    setCandidatesError(null);
+    fetch('http://localhost:8000/api/recruiter/active-candidates/', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`API error: ${res.status} ${text}`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data && typeof data.count === 'number') {
+          setActiveCandidatesCount(data.count);
+        } else {
+          setActiveCandidatesCount(0);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching active candidates:', err);
+        setCandidatesError(err.message || 'Failed to load candidates');
+        setActiveCandidatesCount(0);
+      })
+      .finally(() => setCandidatesLoading(false));
+  }, [userRole]);
 
   const handleLogout = () => {
     // Clear user data from localStorage
@@ -75,7 +247,8 @@ export const DashboardPage = () => {
           {userRole === "candidate" ? (
             // Candidate Navigation
             <>
-              <button className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition">
+              <button className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+              onClick={() => (window.location.href = "/#/find-jobs")}>
                 <svg
                   className="w-5 h-5"
                   fill="none"
@@ -190,8 +363,8 @@ export const DashboardPage = () => {
               </h1>
             </div>
             <div className="flex items-center gap-4">
-              <button className="p-2 rounded-lg hover:bg-gray-100">
-                <SunIcon />
+              <button className="p-2 rounded-lg hover:bg-gray-100" onClick={() => window.dispatchEvent(new CustomEvent('toggleTheme'))} aria-label="Toggle theme">
+                {darkModeLocal ? <MoonIcon /> : <SunIcon />}
               </button>
               <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">
                 {userRole === "candidate" ? "C" : "R"}
@@ -322,7 +495,12 @@ export const DashboardPage = () => {
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="text-gray-600 text-sm mb-2">Active Jobs</p>
-                      <p className="text-4xl font-bold text-gray-900">8</p>
+                      <p className="text-4xl font-bold text-gray-900">
+                        {jobsLoading ? '...' : activeJobsCount}
+                      </p>
+                      {jobsError && (
+                        <p className="text-sm text-red-500 mt-1">Failed to load</p>
+                      )}
                     </div>
                     <div className="p-3 bg-purple-100 rounded-lg">
                       <svg
@@ -349,7 +527,12 @@ export const DashboardPage = () => {
                       <p className="text-gray-600 text-sm mb-2">
                         Active Candidates
                       </p>
-                      <p className="text-4xl font-bold text-gray-900">42</p>
+                      <p className="text-4xl font-bold text-gray-900">
+                        {candidatesLoading ? '...' : activeCandidatesCount}
+                      </p>
+                      {candidatesError && (
+                        <p className="text-sm text-red-500 mt-1">Failed to load</p>
+                      )}
                     </div>
                     <div className="p-3 bg-gray-100 rounded-lg">
                       <svg
