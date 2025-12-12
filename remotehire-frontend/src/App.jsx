@@ -1,41 +1,43 @@
 import React, { useState, useEffect } from "react";
-import { Header } from "./components/Header";
 import { LandingPage } from "./pages/LandingPage";
 import { SignInPage } from "./pages/SignInPage";
 import { SignUpPage } from "./pages/SignUpPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import JobPostsPage from "./pages/JobPostsPage";
 import FindJobsPage from "./pages/FindJobsPage";
+import CandidateDashboardPage from "./pages/CandidateDashboardPage";
+import CandidateInterviewsPage from "./pages/CandidateInterviewsPage";
+import RecruiterCandidatesPage from "./pages/RecruiterCandidatesPage";
+import RecruiterInterviewsPage from "./pages/RecruiterInterviewsPage";
+import RecruiterAnalyticsPage from "./pages/RecruiterAnalyticsPage";
+import InterviewRoomPage from "./pages/InterviewRoomPage";
+import { GitHubCallbackPage } from "./pages/GitHubCallbackPage";
+import { LinkedInCallbackPage } from "./pages/LinkedInCallbackPage";
+import { ProfilePage } from "./pages/ProfilePage";
+import { CandidateDetailsPage } from "./pages/CandidateDetailsPage";
 
 export const App = () => {
   const [darkMode, setDarkMode] = useState(() => {
-    const stored = localStorage.getItem('theme');
-    if (stored) return stored === 'dark';
-    // default to system preference
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const stored = localStorage.getItem("darkMode");
+    if (stored) return stored === "true";
+    return false;
   });
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-    try {
-      window.dispatchEvent(new CustomEvent('themeChanged', { detail: { darkMode } }));
-    } catch (e) {}
+    localStorage.setItem("darkMode", darkMode);
   }, [darkMode]);
 
-  useEffect(() => {
-    const handler = () => setDarkMode((v) => !v);
-    window.addEventListener('toggleTheme', handler);
-    return () => window.removeEventListener('toggleTheme', handler);
-  }, []);
-  const [currentPath, setCurrentPath] = useState(
-    window.location.hash.slice(1) || "/"
-  );
+  const [currentPath, setCurrentPath] = useState(() => {
+    // Check if callback routes (outside hash)
+    if (window.location.pathname === "/auth/github/callback") {
+      return "/auth/github/callback";
+    }
+    if (window.location.pathname === "/auth/linkedin/callback") {
+      return "/auth/linkedin/callback";
+    }
+    const hash = window.location.hash.slice(1) || "/";
+    return hash;
+  });
 
   useEffect(() => {
     const onHashChange = () => {
@@ -46,28 +48,57 @@ export const App = () => {
   }, []);
 
   let page;
-  let pageContainerClass = "bg-white";
 
-  switch (currentPath) {
-    case "/signin":
+  // Handle dynamic candidate route
+  const candidateMatch = currentPath.match(/^\/candidate\/(\d+)$/);
+  // Handle interview room route with query params
+  const interviewRoomMatch = currentPath.startsWith("/interview-room");
+
+  switch (true) {
+    case currentPath === "/auth/github/callback":
+      page = <GitHubCallbackPage />;
+      break;
+    case currentPath === "/auth/linkedin/callback":
+      page = <LinkedInCallbackPage />;
+      break;
+    case interviewRoomMatch:
+      page = <InterviewRoomPage />;
+      break;
+    case !!candidateMatch:
+      page = <CandidateDetailsPage />;
+      break;
+    case currentPath === "/signin":
       page = <SignInPage />;
-      pageContainerClass = "bg-slate-50";
       break;
-    case "/signup":
+    case currentPath === "/signup":
       page = <SignUpPage />;
-      pageContainerClass = "bg-slate-50";
       break;
-    case "/dashboard":
+    case currentPath === "/profile":
+      page = <ProfilePage />;
+      break;
+    case currentPath === "/dashboard":
       page = <DashboardPage />;
-      pageContainerClass = "bg-white";
       break;
-    case "/job-posts":
+    case currentPath === "/candidate-dashboard":
+      page = <CandidateDashboardPage />;
+      break;
+    case currentPath === "/candidate-interviews":
+      page = <CandidateInterviewsPage />;
+      break;
+    case currentPath === "/recruiter-candidates":
+      page = <RecruiterCandidatesPage />;
+      break;
+    case currentPath === "/recruiter-interviews":
+      page = <RecruiterInterviewsPage />;
+      break;
+    case currentPath === "/recruiter-analytics":
+      page = <RecruiterAnalyticsPage />;
+      break;
+    case currentPath === "/job-posts":
       page = <JobPostsPage />;
-      pageContainerClass = "bg-slate-50";
       break;
-    case "/find-jobs":
+    case currentPath === "/find-jobs":
       page = <FindJobsPage />;
-      pageContainerClass = "bg-slate-50";
       break;
     default:
       page = <LandingPage />;
@@ -75,10 +106,7 @@ export const App = () => {
   }
 
   return (
-    <div className={`font-sans ${pageContainerClass}`}>
-      {currentPath !== "/dashboard" && (
-        <Header darkMode={darkMode} toggleDarkMode={() => setDarkMode((v) => !v)} />
-      )}
+    <div className="min-h-screen">
       <main>{page}</main>
     </div>
   );

@@ -1,0 +1,49 @@
+# Environment Variables
+.env
+*.env
+
+# Python
+remotehire_backend/venv/
+remotehire_backend/__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Django
+remotehire_backend/db.sqlite3
+remotehire_backend/media/resumes/
+remotehire_backend/media/photos/
+*.log
+
+# Node.js
+remotehire-frontend/node_modules/
+remotehire-frontend/dist/
+remotehire-frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Misc
+tempCodeRunnerFile.bat
+*.bak
