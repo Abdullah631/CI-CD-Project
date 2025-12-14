@@ -1,6 +1,7 @@
-from .models import User, Job, Interview
+from .models import User, Job, Interview, Application
 from django.db import models
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from django.views.decorators.csrf import csrf_exempt
 from .serializer import UserSerializer, JobSerializer, ApplicationSerializer, InterviewSerializer
 import requests
@@ -978,19 +979,59 @@ def upload_cv(request):
         )
     
     try:
+        from django.conf import settings
+        from .cv_parser import extract_cv_metadata
+        import tempfile
+        import os
+        
         # Save CV file
         print(f"[UPLOAD_CV] Saving CV file for user {user.id}")
         user.cv = cv_file
         user.cv_last_updated = datetime.utcnow()
         user.save()
-        print(f"[UPLOAD_CV] CV file saved at: {user.cv.path}")
+        
+        # For S3, we need to download the file temporarily for processing
+        if settings.USE_S3:
+            print(f"[UPLOAD_CV] Using S3 storage, downloading file for processing")
+            # Download file from S3 to temporary location
+            import boto3
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME,
+                endpoint_url=f'https://s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com'
+            )
+            
+            # Get the full S3 key (includes location prefix from MediaStorage)
+            s3_key = f"media/{user.cv.name}" if not user.cv.name.startswith('media/') else user.cv.name
+            print(f"[UPLOAD_CV] S3 key: {s3_key}")
+            
+            # Create temp file
+            suffix = os.path.splitext(cv_file.name)[1]
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+                # Download from S3
+                s3_client.download_fileobj(
+                    settings.AWS_STORAGE_BUCKET_NAME,
+                    s3_key,
+                    tmp_file
+                )
+                cv_path = tmp_file.name
+                print(f"[UPLOAD_CV] Downloaded from S3 to temp: {cv_path}")
+        else:
+            # Local storage - use direct path
+            cv_path = user.cv.path
+            print(f"[UPLOAD_CV] Using local storage: {cv_path}")
         
         # Extract metadata from CV using Gemini
-        from .cv_parser import extract_cv_metadata
-        cv_path = user.cv.path
         print(f"[UPLOAD_CV] Starting metadata extraction from {cv_path}")
         metadata = extract_cv_metadata(cv_path)
         print(f"[UPLOAD_CV] Metadata extracted: {metadata}")
+        
+        # Clean up temp file if S3 was used
+        if settings.USE_S3 and os.path.exists(cv_path):
+            os.unlink(cv_path)
+            print(f"[UPLOAD_CV] Cleaned up temp file")
         
         # Save metadata to user
         user.cv_metadata = metadata
@@ -1026,14 +1067,221 @@ def get_cv_metadata(request, user_id):
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
+    # Generate secure URL for CV (works with both S3 and local storage)
+    cv_url = None
+    if candidate.cv:
+        if hasattr(candidate.cv, 'url'):
+            cv_url = candidate.cv.url
+    
     return Response({
         'candidate_id': candidate.id,
         'candidate_name': candidate.full_name or candidate.username,
         'candidate_email': candidate.email,
-        'cv_url': candidate.cv.url if candidate.cv else None,
+        'cv_url': cv_url,
         'cv_metadata': candidate.cv_metadata,
         'cv_last_updated': candidate.cv_last_updated.isoformat() if candidate.cv_last_updated else None
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@csrf_exempt
+def download_cv(request, user_id):
+    """Download CV file - accessible by candidate (own CV) or recruiter (any candidate's CV)"""
+    user, err = _get_user_from_bearer(request)
+    if err:
+        return err
+    
+    try:
+        candidate = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Authorization: User can download their own CV, or recruiter can download any CV
+    if user.id != candidate.id and user.role != 'recruiter':
+        return Response(
+            {'error': 'You do not have permission to download this CV'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    if not candidate.cv:
+        return Response({'error': 'CV not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        from django.conf import settings
+        
+        if settings.USE_S3:
+            # Generate presigned URL for S3 (valid for 1 hour)
+            import boto3
+            from botocore.exceptions import ClientError
+            
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME,
+                endpoint_url=f'https://s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com',
+                config=boto3.session.Config(signature_version=settings.AWS_S3_SIGNATURE_VERSION)
+            )
+            
+            # Get the S3 key (file path in bucket) - include media/ prefix
+            file_key = f"media/{candidate.cv.name}" if not candidate.cv.name.startswith('media/') else candidate.cv.name
+            
+            # Generate presigned URL
+            presigned_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={
+                    'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
+                    'Key': file_key,
+                    'ResponseContentDisposition': f'attachment; filename="{candidate.username}_cv.pdf"'
+                },
+                ExpiresIn=3600  # URL valid for 1 hour
+            )
+            
+            return Response({
+                'download_url': presigned_url,
+                'filename': f"{candidate.username}_cv.pdf",
+                'expires_in': 3600
+            }, status=status.HTTP_200_OK)
+        else:
+            # Local file storage - return file response
+            from django.http import FileResponse
+            import os
+            
+            file_path = candidate.cv.path
+            if not os.path.exists(file_path):
+                return Response({'error': 'CV file not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+            response = FileResponse(
+                open(file_path, 'rb'),
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{candidate.username}_cv.pdf"'
+            return response
+            
+    except Exception as e:
+        print(f"[DOWNLOAD_CV] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return Response(
+            {'error': f'Failed to download CV: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@csrf_exempt
+def view_cv(request, user_id):
+    """View CV inline (in browser) - accessible by candidate (own CV) or recruiter (any candidate's CV)"""
+    user, err = _get_user_from_bearer(request)
+    if err:
+        return err
+    
+    try:
+        candidate = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Authorization: User can view their own CV, or recruiter can view any CV
+    if user.id != candidate.id and user.role != 'recruiter':
+        return Response(
+            {'error': 'You do not have permission to view this CV'},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    if not candidate.cv:
+        return Response({'error': 'CV not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        from django.conf import settings
+        
+        if settings.USE_S3:
+            # Generate presigned URL for S3 (valid for 1 hour)
+            import boto3
+            
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+                region_name=settings.AWS_S3_REGION_NAME,
+                endpoint_url=f'https://s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com',
+                config=boto3.session.Config(signature_version=settings.AWS_S3_SIGNATURE_VERSION)
+            )
+            
+            # Get the S3 key (file path in bucket) - include media/ prefix
+            file_key = f"media/{candidate.cv.name}" if not candidate.cv.name.startswith('media/') else candidate.cv.name
+            
+            # Generate presigned URL for inline viewing
+            presigned_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={
+                    'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
+                    'Key': file_key,
+                    'ResponseContentDisposition': 'inline'
+                },
+                ExpiresIn=3600  # URL valid for 1 hour
+            )
+            
+            return Response({
+                'view_url': presigned_url,
+                'filename': f"{candidate.username}_cv.pdf",
+                'expires_in': 3600
+            }, status=status.HTTP_200_OK)
+        else:
+            # Local file storage - return file response for inline viewing
+            from django.http import FileResponse
+            import os
+            
+            file_path = candidate.cv.path
+            if not os.path.exists(file_path):
+                return Response({'error': 'CV file not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+            response = FileResponse(
+                open(file_path, 'rb'),
+                content_type='application/pdf'
+            )
+            response['Content-Disposition'] = 'inline'
+            return response
+            
+    except Exception as e:
+        print(f"[VIEW_CV] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return Response(
+            {'error': f'Failed to view CV: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['DELETE'])
+@csrf_exempt
+def delete_cv(request):
+    """Delete own CV - accessible only by the candidate"""
+    user, err = _get_user_from_bearer(request)
+    if err:
+        return err
+    
+    if not user.cv:
+        return Response({'error': 'No CV to delete'}, status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        # Delete the file
+        user.cv.delete(save=False)
+        
+        # Clear CV metadata
+        user.cv_metadata = {}
+        user.cv_last_updated = None
+        user.save()
+        
+        return Response({
+            'message': 'CV deleted successfully'
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print(f"[DELETE_CV] Error: {str(e)}")
+        return Response(
+            {'error': f'Failed to delete CV: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 # WebRTC Signaling endpoints for video interviews
@@ -1115,4 +1363,129 @@ def get_interview_signals(request, interview_id):
         
     except Exception as e:
         print(f"[GET_INTERVIEW_SIGNALS] Error: {str(e)}")
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@csrf_exempt
+def recruiter_analytics(request):
+    """Get analytics data for recruiter dashboard"""
+    user, err = _get_user_from_bearer(request)
+    if err:
+        return err
+    
+    if user.role != 'recruiter':
+        return Response({'error': 'Only recruiters can access analytics.'}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        from django.db.models import Count, Q
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        # Get all jobs posted by this recruiter
+        recruiter_jobs = Job.objects.filter(posted_by=user)
+        
+        # Total metrics
+        total_jobs = recruiter_jobs.count()
+        active_jobs = recruiter_jobs.filter(status='active').count()
+        
+        # Get all applications for recruiter's jobs
+        all_applications = Application.objects.filter(job__in=recruiter_jobs)
+        total_applications = all_applications.count()
+        
+        # Get all unique candidates who applied
+        total_candidates = all_applications.values('applicant').distinct().count()
+        
+        # Calculate average time to hire (simplified - using interview scheduled as proxy)
+        interviews = Interview.objects.filter(job__in=recruiter_jobs, status='accepted')
+        if interviews.exists():
+            avg_days = 14  # Default estimate
+            # Could calculate actual average by comparing application created_at to interview scheduled_at
+        else:
+            avg_days = 0
+        
+        # Pipeline status - we'll use applications count as proxy for stages
+        # Since we don't have explicit stages, we'll categorize based on whether they have interviews
+        applied_count = total_applications
+        
+        # Candidates with scheduled interviews (any status)
+        candidates_with_interviews = Interview.objects.filter(
+            job__in=recruiter_jobs
+        ).values('candidate').distinct().count()
+        
+        # Candidates with accepted interviews
+        candidates_in_interview = Interview.objects.filter(
+            job__in=recruiter_jobs, 
+            status='accepted'
+        ).values('candidate').distinct().count()
+        
+        # Rough estimation of pipeline stages
+        screening = max(0, total_applications - candidates_with_interviews)
+        interview_stage = candidates_in_interview
+        offer_stage = 0  # We don't track offers yet
+        
+        pipeline_status = [
+            {"stage": "Applied", "count": applied_count},
+            {"stage": "Screening", "count": screening},
+            {"stage": "Interview", "count": interview_stage},
+            {"stage": "Offer", "count": offer_stage},
+        ]
+        
+        # Top jobs by applications
+        top_jobs = recruiter_jobs.annotate(
+            app_count=Count('applications')
+        ).order_by('-app_count')[:4]
+        
+        top_jobs_data = [
+            {
+                "title": job.title,
+                "applications": job.app_count
+            }
+            for job in top_jobs
+        ]
+        
+        # Recent changes (last 30 days comparison)
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        recent_applications = all_applications.filter(created_at__gte=thirty_days_ago).count()
+        recent_candidates = all_applications.filter(created_at__gte=thirty_days_ago).values('applicant').distinct().count()
+        
+        # Calculate percentage changes (simplified)
+        candidate_change = f"+{recent_candidates}" if recent_candidates > 0 else "0"
+        application_change = f"+{int((recent_applications / max(total_applications, 1)) * 100)}%" if total_applications > 0 else "0%"
+        
+        metrics = [
+            {
+                "label": "Total Candidates",
+                "value": total_candidates,
+                "change": candidate_change,
+            },
+            {
+                "label": "Active Jobs",
+                "value": active_jobs,
+                "change": f"+{active_jobs - (total_jobs - active_jobs)}" if total_jobs > 0 else "+0",
+            },
+            {
+                "label": "Total Applications",
+                "value": total_applications,
+                "change": application_change,
+            },
+            {
+                "label": "Avg. Time to Hire",
+                "value": f"{avg_days} days" if avg_days > 0 else "N/A",
+                "change": "-2 days",  # Placeholder
+            },
+        ]
+        
+        analytics_data = {
+            "pipelineStatus": pipeline_status,
+            "topJobs": top_jobs_data,
+            "metrics": metrics,
+        }
+        
+        return Response(analytics_data, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        print(f"[RECRUITER_ANALYTICS] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

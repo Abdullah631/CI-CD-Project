@@ -10,11 +10,13 @@ import {
   X,
 } from "lucide-react";
 import { API_BASE_URL } from "../config";
+import CandidateNav from "../components/CandidateNav";
 
 const CandidateInterviewsPage = () => {
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [userName, setUserName] = useState("");
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("darkMode") === "true"
   );
@@ -23,6 +25,22 @@ const CandidateInterviewsPage = () => {
   const [notifiedInterviews, setNotifiedInterviews] = useState(new Set());
   const notifiedRef = useRef(new Set()); // Track immediately to prevent duplicate notifications
   const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUserName(userData.username || "User");
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, []);
 
   // Request notification permission
   useEffect(() => {
@@ -187,72 +205,15 @@ const CandidateInterviewsPage = () => {
           : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
       }`}
     >
-      <header
-        className={`sticky top-0 z-40 backdrop-blur-lg border-b transition-all duration-300 ${
-          darkMode
-            ? "bg-slate-800/80 border-slate-700/50"
-            : "bg-white/80 border-blue-100/50"
-        }`}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div
-                className={`p-2 rounded-lg ${
-                  darkMode
-                    ? "bg-indigo-600/20 text-indigo-400"
-                    : "bg-blue-600/10 text-blue-600"
-                }`}
-              >
-                <Calendar size={24} />
-              </div>
-              <h1
-                className={`text-2xl font-bold hidden sm:block ${
-                  darkMode ? "text-white" : "text-slate-900"
-                }`}
-              >
-                My Interviews
-              </h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  const next = !darkMode;
-                  setDarkMode(next);
-                  localStorage.setItem("darkMode", next);
-                }}
-                className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                  darkMode
-                    ? "bg-slate-700 hover:bg-slate-600 text-yellow-400"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                }`}
-              >
-                {darkMode ? "☀️" : "🌙"}
-              </button>
-              <a
-                href="/#/candidate-dashboard"
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-300 hover:bg-slate-700/50"
-                    : "text-slate-700 hover:bg-blue-100/50"
-                }`}
-              >
-                Dashboard
-              </a>
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className={`md:hidden p-2 rounded-lg transition-all duration-300 ${
-                  darkMode
-                    ? "bg-slate-700 hover:bg-slate-600"
-                    : "bg-slate-100 hover:bg-slate-200"
-                }`}
-              >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <CandidateNav
+        darkMode={darkMode}
+        onToggleDarkMode={() => {
+          setDarkMode(!darkMode);
+          localStorage.setItem("darkMode", !darkMode);
+        }}
+        userName={userName}
+        currentPage="interviews"
+      />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Upcoming Interview Alert Banner */}

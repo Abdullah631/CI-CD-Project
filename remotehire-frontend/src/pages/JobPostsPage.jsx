@@ -9,11 +9,11 @@ import {
   Eye,
   Edit,
   Trash2,
-  Menu,
-  X,
   ChevronDown,
   Search,
+  X,
 } from "lucide-react";
+import RecruiterNav from "../components/RecruiterNav";
 
 export const JobPostsPage = () => {
   const [jobs, setJobs] = useState([]);
@@ -22,9 +22,9 @@ export const JobPostsPage = () => {
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("darkMode") === "true"
   );
+  const [userName, setUserName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("latest");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [jobForm, setJobForm] = useState({
     title: "",
@@ -217,141 +217,15 @@ export const JobPostsPage = () => {
           : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
       }`}
     >
-      {/* Header */}
-      <header
-        className={`sticky top-0 z-40 backdrop-blur-lg border-b transition-all duration-300 ${
-          darkMode
-            ? "bg-slate-800/80 border-slate-700/50"
-            : "bg-white/80 border-blue-100/50"
-        }`}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-4">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div
-                className={`p-2 rounded-lg ${
-                  darkMode
-                    ? "bg-indigo-600/20 text-indigo-400"
-                    : "bg-blue-600/10 text-blue-600"
-                }`}
-              >
-                <Briefcase size={24} />
-              </div>
-              <h1
-                className={`text-2xl font-bold hidden sm:block ${
-                  darkMode ? "text-white" : "text-slate-900"
-                }`}
-              >
-                Job Posts
-              </h1>
-            </div>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1">
-              <button
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-300 hover:bg-slate-700/50"
-                    : "text-slate-700 hover:bg-blue-100/50"
-                }`}
-              >
-                All Jobs
-              </button>
-              <button
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-400 hover:bg-slate-700/50"
-                    : "text-slate-600 hover:bg-blue-100/50"
-                }`}
-              >
-                Active
-              </button>
-            </nav>
-
-            {/* Right Actions */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setAddModalOpen(true)}
-                className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
-                  darkMode
-                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50"
-                    : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30"
-                }`}
-              >
-                <Plus size={20} />
-                Add Job
-              </button>
-              <button
-                onClick={() => {
-                  setDarkMode(!darkMode);
-                  localStorage.setItem("darkMode", !darkMode);
-                }}
-                className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                  darkMode
-                    ? "bg-slate-700 hover:bg-slate-600 text-yellow-400"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                }`}
-              >
-                {darkMode ? "☀️" : "🌙"}
-              </button>
-
-              {/* Add Job Button for Mobile */}
-              <button
-                onClick={() => setAddModalOpen(true)}
-                className={`md:hidden p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                  darkMode
-                    ? "bg-indigo-600 hover:bg-indigo-500 text-white"
-                    : "bg-blue-600 hover:bg-blue-500 text-white"
-                }`}
-              >
-                <Plus size={24} />
-              </button>
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className={`md:hidden p-2 rounded-lg transition-all duration-300 ${
-                  darkMode
-                    ? "bg-slate-700 hover:bg-slate-600"
-                    : "bg-slate-100 hover:bg-slate-200"
-                }`}
-              >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <nav
-              className={`mt-4 space-y-2 md:hidden animate-slideDown ${
-                darkMode ? "bg-slate-700/30" : "bg-blue-50/30"
-              } p-4 rounded-xl`}
-            >
-              <button
-                className={`block w-full text-left px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-300 hover:bg-slate-700/50"
-                    : "text-slate-700 hover:bg-blue-100/50"
-                }`}
-              >
-                All Jobs
-              </button>
-              <button
-                className={`block w-full text-left px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-400 hover:bg-slate-700/50"
-                    : "text-slate-600 hover:bg-blue-100/50"
-                }`}
-              >
-                Active
-              </button>
-              {/* Post Job Button - Feature coming soon */}
-            </nav>
-          )}
-        </div>
-      </header>
+      <RecruiterNav
+        darkMode={darkMode}
+        onToggleDarkMode={() => {
+          setDarkMode(!darkMode);
+          localStorage.setItem("darkMode", !darkMode);
+        }}
+        userName={userName}
+        currentPage="jobs"
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -406,7 +280,18 @@ export const JobPostsPage = () => {
               : "bg-white/60 border-blue-100/50"
           }`}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => setAddModalOpen(true)}
+              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 ${
+                darkMode
+                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50"
+                  : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30"
+              }`}
+            >
+              <Plus size={20} />
+              Add Job
+            </button>
             {/* Search Input */}
             <div className="relative">
               <Search
@@ -420,22 +305,15 @@ export const JobPostsPage = () => {
                 placeholder="Search jobs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full pl-12 pr-4 py-3 rounded-xl border font-semibold transition-all duration-300 focus:outline-none focus:ring-2 ${
+                className={`w-full pl-12 pr-4 py-3 rounded-xl border font-medium transition-all duration-300 focus:outline-none focus:ring-2 ${
                   darkMode
                     ? "bg-slate-700/30 border-slate-600/50 text-white placeholder-slate-400 focus:ring-indigo-500/50 focus:border-indigo-500/50"
                     : "bg-blue-50/50 border-blue-100/50 text-slate-900 placeholder-slate-500 focus:ring-blue-500/30 focus:border-blue-500/30"
                 }`}
               />
             </div>
-
             {/* Sort Dropdown */}
             <div className="relative">
-              <ChevronDown
-                size={20}
-                className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none ${
-                  darkMode ? "text-slate-400" : "text-slate-500"
-                }`}
-              />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -840,10 +718,10 @@ export const JobPostsPage = () => {
                     setLanguageInput("");
                     setCertificationInput("");
                   }}
-                  className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
+                  className={`p-2 rounded-lg border transition-all duration-300 hover:scale-110 ${
                     darkMode
-                      ? "hover:bg-slate-700 text-slate-400"
-                      : "hover:bg-slate-100 text-slate-600"
+                      ? "bg-slate-700/40 border-slate-600/50 text-slate-300 hover:bg-slate-700/60"
+                      : "bg-white/70 border-blue-100 text-slate-600 hover:bg-slate-100"
                   }`}
                 >
                   <X size={24} />
@@ -1408,10 +1286,10 @@ export const JobPostsPage = () => {
                     setViewModalOpen(false);
                     setSelectedJob(null);
                   }}
-                  className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
+                  className={`p-2 rounded-lg border transition-all duration-300 hover:scale-110 ${
                     darkMode
-                      ? "hover:bg-slate-700 text-slate-400"
-                      : "hover:bg-slate-100 text-slate-600"
+                      ? "bg-slate-700/40 border-slate-600/50 text-slate-300 hover:bg-slate-700/60"
+                      : "bg-white/70 border-blue-100 text-slate-600 hover:bg-slate-100"
                   }`}
                 >
                   <X size={24} />
@@ -1649,10 +1527,10 @@ export const JobPostsPage = () => {
                     setSelectedJob(null);
                     setSubmitMessage("");
                   }}
-                  className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
+                  className={`p-2 rounded-lg border transition-all duration-300 hover:scale-110 ${
                     darkMode
-                      ? "hover:bg-slate-700 text-slate-400"
-                      : "hover:bg-slate-100 text-slate-600"
+                      ? "bg-slate-700/40 border-slate-600/50 text-slate-300 hover:bg-slate-700/60"
+                      : "bg-white/70 border-blue-100 text-slate-600 hover:bg-slate-100"
                   }`}
                 >
                   <X size={24} />

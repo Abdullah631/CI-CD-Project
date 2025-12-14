@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ArrowRight, Zap, CheckCircle, Users, BarChart3 } from "lucide-react";
-
+import { LandingNav } from "../components/LandingNav";
 export const LandingPage = () => {
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("darkMode") === "true"
@@ -45,22 +45,7 @@ export const LandingPage = () => {
           : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
       }`}
     >
-      {/* Dark Mode Toggle */}
-      <div className="fixed top-4 right-4 z-50">
-        <button
-          onClick={() => {
-            setDarkMode(!darkMode);
-            localStorage.setItem("darkMode", !darkMode);
-          }}
-          className={`p-3 rounded-xl transition-all duration-300 hover:scale-110 shadow-lg ${
-            darkMode
-              ? "bg-slate-700 hover:bg-slate-600 text-yellow-400"
-              : "bg-white/60 hover:bg-white text-slate-600 backdrop-blur-lg"
-          }`}
-        >
-          {darkMode ? "☀️" : "🌙"}
-        </button>
-      </div>
+      {/* Dark Mode Toggle is now inside the navbar */}
 
       {/* Background Decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -77,58 +62,13 @@ export const LandingPage = () => {
       </div>
 
       {/* Navigation */}
-      <nav
-        className={`sticky top-0 z-40 backdrop-blur-lg border-b transition-all duration-300 ${
-          darkMode
-            ? "bg-slate-800/80 border-slate-700/50"
-            : "bg-white/80 border-blue-100/50"
-        }`}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 group">
-            <div
-              className={`p-2 rounded-lg transition-all duration-300 group-hover:scale-110 ${
-                darkMode ? "bg-indigo-600/20" : "bg-blue-100"
-              }`}
-            >
-              <Zap
-                size={24}
-                className={darkMode ? "text-indigo-400" : "text-blue-600"}
-              />
-            </div>
-            <span
-              className={`text-xl font-bold transition-colors duration-300 ${
-                darkMode ? "text-white" : "text-slate-900"
-              }`}
-            >
-              RemoteHire.io
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <a
-              href="/#/signin"
-              className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
-                darkMode
-                  ? "text-slate-300 hover:text-white"
-                  : "text-slate-700 hover:text-slate-900"
-              }`}
-            >
-              Sign In
-            </a>
-            <a
-              href="/#/signup"
-              className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-                darkMode
-                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
-                  : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 border border-blue-300/50"
-              }`}
-            >
-              Get Started
-            </a>
-          </div>
-        </div>
-      </nav>
-
+      <LandingNav
+        darkMode={darkMode}
+        onToggleDarkMode={() => {
+          setDarkMode(!darkMode);
+          localStorage.setItem("darkMode", !darkMode);
+        }}
+      />
       {/* Hero Section */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32 relative z-10">
         {/* Badge */}
@@ -141,7 +81,9 @@ export const LandingPage = () => {
             }`}
           >
             <span className="text-lg">⚡</span>
-            <span className="font-semibold">AI-Powered Recruitment Platform</span>
+            <span className="font-semibold">
+              AI-Powered Recruitment Platform
+            </span>
           </div>
         </div>
 
@@ -169,22 +111,25 @@ export const LandingPage = () => {
             darkMode ? "text-slate-400" : "text-slate-600"
           }`}
         >
-          Streamline candidate evaluation with AI-powered CV analysis, intelligent
-          matching, and real-time assessments—all in one powerful platform.
+          Streamline candidate evaluation with AI-powered CV analysis,
+          intelligent matching, and real-time assessments—all in one powerful
+          platform.
         </p>
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
           <a
             href="/#/signup"
-            className={`w-full sm:w-auto px-8 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 transform hover:scale-105 active:scale-95 ${
-              darkMode
-                ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
-                : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 border border-blue-300/50"
-            }`}
+            className={`w-full sm:w-auto px-8 py-4 rounded-xl font-semibold transition-all duration-300 
+    flex items-center justify-center gap-2 transform hover:scale-105 active:scale-95
+    text-white hover:text-white active:text-white ${
+      darkMode
+        ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
+        : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-lg hover:shadow-blue-500/30 border border-blue-300/50"
+    }`}
           >
             Get Started Free
-            <ArrowRight size={20} />
+            <ArrowRight size={20} className="text-white" />
           </a>
           <button
             className={`w-full sm:w-auto px-8 py-4 rounded-xl font-semibold transition-all duration-300 border hover:scale-105 ${
@@ -212,7 +157,9 @@ export const LandingPage = () => {
               >
                 <div
                   className={`p-8 h-full flex flex-col ${
-                    darkMode ? "bg-gradient-to-br from-slate-800 to-transparent" : "bg-gradient-to-br from-white to-transparent"
+                    darkMode
+                      ? "bg-gradient-to-br from-slate-800 to-transparent"
+                      : "bg-gradient-to-br from-white to-transparent"
                   }`}
                 >
                   <div

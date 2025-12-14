@@ -11,11 +11,13 @@ import {
   Download,
   ArrowLeft,
 } from "lucide-react";
+import CandidateNav from "../components/CandidateNav";
 
 export const CandidateDetailsPage = () => {
   const [candidate, setCandidate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [userName, setUserName] = useState("");
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("darkMode") === "true"
   );
@@ -24,6 +26,22 @@ export const CandidateDetailsPage = () => {
 
   const candidateIdMatch = window.location.hash.match(/\/candidate\/(\d+)/);
   const candidateId = candidateIdMatch ? candidateIdMatch[1] : null;
+
+  useEffect(() => {
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUserName(userData.username || "User");
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!candidateId) {
@@ -49,6 +67,56 @@ export const CandidateDetailsPage = () => {
       setError("Failed to load candidate details");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadCV = async () => {
+    try {
+      const response = await axios.get(
+        `${window.API_BASE_URL}/api/candidate/${candidateId}/cv/download/`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // If S3 is enabled, response will contain download_url
+      if (response.data.download_url) {
+        window.open(response.data.download_url, "_blank");
+      } else {
+        // Fallback for local file storage - direct file response
+        window.open(candidate.cv_url, "_blank");
+      }
+    } catch (err) {
+      console.error("Error downloading CV:", err);
+      // Fallback to direct URL
+      if (candidate.cv_url) {
+        window.open(candidate.cv_url, "_blank");
+      }
+    }
+  };
+
+  const handleViewCV = async () => {
+    try {
+      const response = await axios.get(
+        `${window.API_BASE_URL}/api/candidate/${candidateId}/cv/view/`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // If S3 is enabled, response will contain view_url
+      if (response.data.view_url) {
+        window.open(response.data.view_url, "_blank");
+      } else {
+        // Fallback for local file storage
+        window.open(candidate.cv_url, "_blank");
+      }
+    } catch (err) {
+      console.error("Error viewing CV:", err);
+      // Fallback to direct URL
+      if (candidate.cv_url) {
+        window.open(candidate.cv_url, "_blank");
+      }
     }
   };
 
@@ -108,41 +176,15 @@ export const CandidateDetailsPage = () => {
           : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
       }`}
     >
-      {/* Header */}
-      <header
-        className={`sticky top-0 z-40 backdrop-blur-lg border-b transition-all duration-300 ${
-          darkMode
-            ? "bg-slate-800/80 border-slate-700/50"
-            : "bg-white/80 border-blue-100/50"
-        }`}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <button
-            onClick={() => window.history.back()}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
-              darkMode
-                ? "text-slate-300 hover:bg-slate-700/50"
-                : "text-slate-700 hover:bg-blue-100"
-            }`}
-          >
-            <ArrowLeft size={20} />
-            Back
-          </button>
-          <button
-            onClick={() => {
-              setDarkMode(!darkMode);
-              localStorage.setItem("darkMode", !darkMode);
-            }}
-            className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-              darkMode
-                ? "bg-slate-700 hover:bg-slate-600 text-yellow-400"
-                : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-            }`}
-          >
-            {darkMode ? "☀️" : "🌙"}
-          </button>
-        </div>
-      </header>
+      <CandidateNav
+        darkMode={darkMode}
+        onToggleDarkMode={() => {
+          setDarkMode(!darkMode);
+          localStorage.setItem("darkMode", !darkMode);
+        }}
+        userName={userName}
+        currentPage="details"
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -190,19 +232,29 @@ export const CandidateDetailsPage = () => {
                 )}
               </div>
               {candidate.cv_url && (
-                <a
-                  href={candidate.cv_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-                    darkMode
-                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
-                      : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 border border-blue-300/50"
-                  }`}
-                >
-                  <Download size={20} />
-                  Download CV
-                </a>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleViewCV}
+                    className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                      darkMode
+                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/50 border border-blue-500/50"
+                        : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 border border-blue-300/50"
+                    }`}
+                  >
+                    👁️ View CV
+                  </button>
+                  <button
+                    onClick={handleDownloadCV}
+                    className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                      darkMode
+                        ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
+                        : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-purple-500/30 border border-purple-300/50"
+                    }`}
+                  >
+                    <Download size={20} />
+                    Download CV
+                  </button>
+                </div>
               )}
             </div>
           </div>

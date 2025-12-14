@@ -13,6 +13,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
+import CandidateNav from "../components/CandidateNav";
 
 export const ProfilePage = () => {
   const [profile, setProfile] = useState({
@@ -32,6 +33,7 @@ export const ProfilePage = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [editing, setEditing] = useState(false);
+  const [userName, setUserName] = useState("");
   const [cvFile, setCvFile] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
   const [darkMode, setDarkMode] = useState(
@@ -39,6 +41,18 @@ export const ProfilePage = () => {
   );
 
   const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUserName(userData.username || "User");
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetchProfile();
@@ -81,6 +95,60 @@ export const ProfilePage = () => {
 
   const handleCvChange = (e) => {
     setCvFile(e.target.files[0]);
+  };
+
+  const handleViewCV = async () => {
+    try {
+      const userId =
+        profile.id || JSON.parse(atob(token.split(".")[1])).user_id;
+      const response = await axios.get(
+        `${window.API_BASE_URL}/api/candidate/${userId}/cv/view/`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // If S3 is enabled, response will contain view_url
+      if (response.data.view_url) {
+        window.open(response.data.view_url, "_blank");
+      } else {
+        // Fallback for local file storage
+        window.open(profile.cv, "_blank");
+      }
+    } catch (err) {
+      console.error("Error viewing CV:", err);
+      // Fallback to direct URL
+      if (profile.cv) {
+        window.open(profile.cv, "_blank");
+      }
+    }
+  };
+
+  const handleDownloadCV = async () => {
+    try {
+      const userId =
+        profile.id || JSON.parse(atob(token.split(".")[1])).user_id;
+      const response = await axios.get(
+        `${window.API_BASE_URL}/api/candidate/${userId}/cv/download/`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // If S3 is enabled, response will contain download_url
+      if (response.data.download_url) {
+        window.open(response.data.download_url, "_blank");
+      } else {
+        // Fallback for local file storage
+        window.open(profile.cv, "_blank");
+      }
+    } catch (err) {
+      console.error("Error downloading CV:", err);
+      // Fallback to direct URL
+      if (profile.cv) {
+        window.open(profile.cv, "_blank");
+      }
+    }
   };
 
   const handleSaveProfile = async (e) => {
@@ -175,48 +243,15 @@ export const ProfilePage = () => {
           : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
       }`}
     >
-      {/* Header */}
-      <div className="sticky top-0 z-40">
-        <div
-          className={`backdrop-blur-lg border-b transition-all duration-300 ${
-            darkMode
-              ? "bg-slate-800/80 border-slate-700/50"
-              : "bg-white/80 border-blue-100/50"
-          }`}
-        >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className={`p-2 rounded-xl ${
-                  darkMode ? "bg-indigo-600/20" : "bg-blue-600/10"
-                }`}
-              >
-                <User
-                  size={24}
-                  className={darkMode ? "text-indigo-400" : "text-blue-600"}
-                />
-              </div>
-              <h1
-                className={`text-2xl font-bold ${
-                  darkMode ? "text-white" : "text-slate-900"
-                }`}
-              >
-                My Profile
-              </h1>
-            </div>
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-xl transition-all duration-300 ${
-                darkMode
-                  ? "bg-slate-700 hover:bg-slate-600"
-                  : "bg-slate-200 hover:bg-slate-300"
-              }`}
-            >
-              {darkMode ? "☀️" : "🌙"}
-            </button>
-          </div>
-        </div>
-      </div>
+      <CandidateNav
+        darkMode={darkMode}
+        onToggleDarkMode={() => {
+          setDarkMode(!darkMode);
+          localStorage.setItem("darkMode", !darkMode);
+        }}
+        userName={userName}
+        currentPage="profile"
+      />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Messages */}
@@ -510,16 +545,28 @@ export const ProfilePage = () => {
                     >
                       CV uploaded and processed
                     </p>
-                    <a
-                      href={profile.cv}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`inline-block mb-3 font-semibold hover:underline ${
-                        darkMode ? "text-indigo-400" : "text-blue-600"
-                      }`}
-                    >
-                      📄 View your CV
-                    </a>
+                    <div className="flex gap-3 mb-3">
+                      <button
+                        onClick={handleViewCV}
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
+                          darkMode
+                            ? "bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600/30 border border-indigo-500/30"
+                            : "bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300"
+                        }`}
+                      >
+                        👁️ View CV
+                      </button>
+                      <button
+                        onClick={handleDownloadCV}
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
+                          darkMode
+                            ? "bg-purple-600/20 text-purple-400 hover:bg-purple-600/30 border border-purple-500/30"
+                            : "bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-300"
+                        }`}
+                      >
+                        📥 Download CV
+                      </button>
+                    </div>
                     {profile.cv_last_updated && (
                       <p
                         className={`text-sm ${

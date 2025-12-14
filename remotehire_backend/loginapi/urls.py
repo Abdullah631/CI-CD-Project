@@ -7,7 +7,8 @@ from .views import google_login, google_callback, github_login, github_callback
 from .views import candidate_applications, candidate_dashboard_stats, candidate_withdraw_application
 from .views import recruiter_dashboard_stats, recruiter_job_applicants, recruiter_all_applicants, recruiter_recent_applicants
 from .views import google_oauth, github_oauth, linkedin_oauth
-from .views import candidate_profile, upload_cv, get_cv_metadata
+from .views import candidate_profile, upload_cv, get_cv_metadata, download_cv, view_cv, delete_cv
+from .views import recruiter_analytics
 
 urlpatterns = [
     path('register/', register_user, name='register_user'),
@@ -18,6 +19,7 @@ urlpatterns = [
     path('recruiter/active-candidates/', active_candidates_count, name='active_candidates_count'),
     # Recruiter Dashboard endpoints
     path('recruiter/dashboard/stats/', recruiter_dashboard_stats, name='recruiter_dashboard_stats'),
+    path('recruiter/analytics/', recruiter_analytics, name='recruiter_analytics'),
     path('recruiter/jobs/<int:job_id>/applicants/', recruiter_job_applicants, name='recruiter_job_applicants'),
     path('recruiter/applicants/', recruiter_all_applicants, name='recruiter_all_applicants'),
     path('recruiter/applicants/recent/', recruiter_recent_applicants, name='recruiter_recent_applicants'),
@@ -37,7 +39,10 @@ urlpatterns = [
     # Candidate Profile endpoints
     path('candidate/profile/', candidate_profile, name='candidate_profile'),
     path('candidate/upload-cv/', upload_cv, name='upload_cv'),
+    path('candidate/delete-cv/', delete_cv, name='delete_cv'),
     path('candidate/<int:user_id>/cv-metadata/', get_cv_metadata, name='get_cv_metadata'),
+    path('candidate/<int:user_id>/cv/download/', download_cv, name='download_cv'),
+    path('candidate/<int:user_id>/cv/view/', view_cv, name='view_cv'),
     # OAuth endpoints (NEW)
     path('auth/google/', google_oauth, name='google_oauth'),
     path('auth/github/', github_oauth, name='github_oauth'),
