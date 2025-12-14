@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import JobDetailsModal from "../components/JobDetailsModal";
 import { Search, Briefcase } from "lucide-react";
+import CandidateNav from "../components/CandidateNav";
 
 export const FindJobsPage = () => {
   const [jobs, setJobs] = useState([]);
@@ -9,11 +10,10 @@ export const FindJobsPage = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [darkMode, setDarkMode] = useState(() => {
-    const stored = localStorage.getItem("theme");
-    if (stored) return stored === "dark";
-    return document.documentElement.classList.contains("dark");
-  });
+  const [userName, setUserName] = useState("");
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("darkMode") === "true"
+  );
   const [appliedJobs, setAppliedJobs] = useState(new Set());
   const [selectedJob, setSelectedJob] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -21,10 +21,15 @@ export const FindJobsPage = () => {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
+
+  useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser);
+        setUserName(userData.username || "User");
         if (userData.role !== "candidate") {
           window.location.href = "/#/dashboard";
         }
@@ -142,71 +147,15 @@ export const FindJobsPage = () => {
           : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
       }`}
     >
-      {/* Header */}
-      <div
-        className={`sticky top-0 z-40 backdrop-blur-md transition-all duration-300 ${
-          darkMode
-            ? "bg-slate-900/80 border-b border-slate-700/50"
-            : "bg-white/80 border-b border-blue-100/50"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div
-                className={`p-3 rounded-xl transition-all duration-300 ${
-                  darkMode
-                    ? "bg-gradient-to-br from-indigo-600 to-purple-600"
-                    : "bg-gradient-to-br from-blue-600 to-indigo-600"
-                }`}
-              >
-                <Briefcase className="text-white" size={24} />
-              </div>
-              <div>
-                <h1
-                  className={`text-3xl font-bold bg-clip-text bg-gradient-to-r ${
-                    darkMode
-                      ? "from-indigo-400 to-purple-400 text-transparent"
-                      : "from-blue-600 to-indigo-600 text-transparent"
-                  }`}
-                >
-                  Discover Jobs
-                </h1>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-slate-400" : "text-slate-600"
-                  }`}
-                >
-                  Find your next opportunity
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              <a
-                href="/#/profile"
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm hover:scale-105 ${
-                  darkMode
-                    ? "text-indigo-400 hover:bg-slate-700/50"
-                    : "text-blue-600 hover:bg-blue-50"
-                }`}
-              >
-                👤 Profile
-              </a>
-              <a
-                href="/#/candidate-dashboard"
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm hover:scale-105 ${
-                  darkMode
-                    ? "text-blue-400 hover:bg-slate-700/50"
-                    : "text-blue-600 hover:bg-blue-50"
-                }`}
-              >
-                📋 Applications
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
+      <CandidateNav
+        darkMode={darkMode}
+        onToggleDarkMode={() => {
+          setDarkMode(!darkMode);
+          localStorage.setItem("darkMode", !darkMode);
+        }}
+        userName={userName}
+        currentPage="findjobs"
+      />
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

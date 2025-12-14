@@ -4,17 +4,19 @@ import {
   TrendingUp,
   Users,
   Briefcase,
-  Menu,
-  X,
   PieChart as PieChartIcon,
 } from "lucide-react";
+import RecruiterNav from "../components/RecruiterNav";
+import { API_BASE_URL } from "../config";
 
 export const RecruiterAnalyticsPage = () => {
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("darkMode") === "true"
   );
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userName, setUserName] = useState("");
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     localStorage.setItem("darkMode", darkMode);
@@ -32,51 +34,128 @@ export const RecruiterAnalyticsPage = () => {
     }
   }, []);
 
-  // Sample analytics data
-  const analyticsData = {
+  // Fetch analytics data
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          setError("No authentication token found");
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/recruiter/analytics/`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch analytics: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Transform backend data to match the expected format with icons and colors
+        const transformedData = {
+          pipelineStatus: data.pipelineStatus || [],
+          topJobs: data.topJobs || [],
+          metrics: (data.metrics || []).map((metric, idx) => {
+            const iconMap = {
+              "Total Candidates": {
+                icon: Users,
+                color: "from-blue-600 to-cyan-600",
+              },
+              "Active Jobs": {
+                icon: Briefcase,
+                color: "from-purple-600 to-pink-600",
+              },
+              "Total Applications": {
+                icon: TrendingUp,
+                color: "from-green-600 to-emerald-600",
+              },
+              "Avg. Time to Hire": {
+                icon: BarChart3,
+                color: "from-orange-600 to-red-600",
+              },
+            };
+
+            const mapping = iconMap[metric.label] || {
+              icon: BarChart3,
+              color: "from-gray-600 to-slate-600",
+            };
+
+            return {
+              ...metric,
+              icon: mapping.icon,
+              color: mapping.color,
+            };
+          }),
+        };
+
+        setAnalyticsData(transformedData);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching analytics:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnalytics();
+  }, []);
+
+  // Default/fallback analytics data
+  const defaultAnalyticsData = {
     pipelineStatus: [
-      { stage: "Applied", count: 42 },
-      { stage: "Screening", count: 15 },
-      { stage: "Interview", count: 8 },
-      { stage: "Offer", count: 3 },
+      { stage: "Applied", count: 0 },
+      { stage: "Screening", count: 0 },
+      { stage: "Interview", count: 0 },
+      { stage: "Offer", count: 0 },
     ],
-    topJobs: [
-      { title: "React Developer", applications: 28 },
-      { title: "Full Stack Dev", applications: 22 },
-      { title: "UI Designer", applications: 18 },
-      { title: "Backend Dev", applications: 15 },
-    ],
+    topJobs: [],
     metrics: [
       {
         icon: Users,
         label: "Total Candidates",
-        value: 156,
-        change: "+12%",
+        value: 0,
+        change: "0",
         color: "from-blue-600 to-cyan-600",
       },
       {
         icon: Briefcase,
         label: "Active Jobs",
-        value: 8,
-        change: "+2",
+        value: 0,
+        change: "+0",
         color: "from-purple-600 to-pink-600",
       },
       {
         icon: TrendingUp,
         label: "Total Applications",
-        value: 68,
-        change: "+18%",
+        value: 0,
+        change: "0%",
         color: "from-green-600 to-emerald-600",
       },
       {
         icon: BarChart3,
         label: "Avg. Time to Hire",
-        value: "14 days",
-        change: "-2 days",
+        value: "N/A",
+        change: "0 days",
         color: "from-orange-600 to-red-600",
       },
     ],
   };
+
+  const displayData = analyticsData || defaultAnalyticsData;
 
   return (
     <div
@@ -86,114 +165,15 @@ export const RecruiterAnalyticsPage = () => {
           : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
       }`}
     >
-      {/* Header */}
-      <header
-        className={`sticky top-0 z-40 backdrop-blur-lg border-b transition-all duration-300 ${
-          darkMode
-            ? "bg-slate-800/80 border-slate-700/50"
-            : "bg-white/80 border-blue-100/50"
-        }`}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-4">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div
-                className={`p-2 rounded-lg ${
-                  darkMode
-                    ? "bg-indigo-600/20 text-indigo-400"
-                    : "bg-blue-600/10 text-blue-600"
-                }`}
-              >
-                <BarChart3 size={24} />
-              </div>
-              <h1
-                className={`text-2xl font-bold hidden sm:block ${
-                  darkMode ? "text-white" : "text-slate-900"
-                }`}
-              >
-                Analytics
-              </h1>
-            </div>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1">
-              <button
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-300 hover:bg-slate-700/50"
-                    : "text-slate-700 hover:bg-blue-100/50"
-                }`}
-              >
-                Overview
-              </button>
-              <button
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-400 hover:bg-slate-700/50"
-                    : "text-slate-600 hover:bg-blue-100/50"
-                }`}
-              >
-                Reports
-              </button>
-            </nav>
-
-            {/* Right Actions */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                  darkMode
-                    ? "bg-slate-700 hover:bg-slate-600 text-yellow-400"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                }`}
-              >
-                {darkMode ? "☀️" : "🌙"}
-              </button>
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className={`md:hidden p-2 rounded-lg transition-all duration-300 ${
-                  darkMode
-                    ? "bg-slate-700 hover:bg-slate-600"
-                    : "bg-slate-100 hover:bg-slate-200"
-                }`}
-              >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <nav
-              className={`mt-4 space-y-2 md:hidden animate-slideDown ${
-                darkMode ? "bg-slate-700/30" : "bg-blue-50/30"
-              } p-4 rounded-xl`}
-            >
-              <button
-                className={`block w-full text-left px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-300 hover:bg-slate-700/50"
-                    : "text-slate-700 hover:bg-blue-100/50"
-                }`}
-              >
-                Overview
-              </button>
-              <button
-                className={`block w-full text-left px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-400 hover:bg-slate-700/50"
-                    : "text-slate-600 hover:bg-blue-100/50"
-                }`}
-              >
-                Reports
-              </button>
-            </nav>
-          )}
-        </div>
-      </header>
+      <RecruiterNav
+        darkMode={darkMode}
+        onToggleDarkMode={() => {
+          setDarkMode(!darkMode);
+          localStorage.setItem("darkMode", !darkMode);
+        }}
+        userName={userName}
+        currentPage="analytics"
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -213,224 +193,285 @@ export const RecruiterAnalyticsPage = () => {
             Welcome back, {userName}! 👋
           </h2>
           <p
-            className={`text-lg ${darkMode ? "text-slate-300" : "text-slate-600"}`}
+            className={`text-lg ${
+              darkMode ? "text-slate-300" : "text-slate-600"
+            }`}
           >
             Here's your recruitment analytics for this month
           </p>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          {analyticsData.metrics.map((metric, idx) => {
-            const IconComponent = metric.icon;
-            return (
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div
+              className={`inline-block animate-spin rounded-full h-12 w-12 border-b-2 ${
+                darkMode ? "border-indigo-400" : "border-indigo-600"
+              }`}
+            ></div>
+            <p
+              className={`mt-4 ${
+                darkMode ? "text-slate-300" : "text-slate-600"
+              }`}
+            >
+              Loading analytics...
+            </p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div
+            className={`rounded-3xl border p-6 mb-8 ${
+              darkMode
+                ? "bg-red-900/20 border-red-500/50 text-red-200"
+                : "bg-red-50 border-red-200 text-red-700"
+            }`}
+          >
+            <p className="font-semibold">Error loading analytics:</p>
+            <p>{error}</p>
+          </div>
+        )}
+
+        {/* Analytics Content */}
+        {!loading && (
+          <>
+            {/* Key Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {displayData.metrics.map((metric, idx) => {
+                const IconComponent = metric.icon;
+                return (
+                  <div
+                    key={idx}
+                    className={`rounded-3xl border backdrop-blur transition-all duration-300 transform hover:scale-105 ${
+                      darkMode
+                        ? "bg-slate-800/40 border-slate-700/50 shadow-lg shadow-black/20"
+                        : "bg-white/60 border-blue-100/50 shadow-lg shadow-blue-500/5"
+                    }`}
+                    style={{
+                      animationDelay: `${idx * 50}ms`,
+                      animation: "fadeInUp 0.6s ease-out",
+                    }}
+                  >
+                    <div className="p-6">
+                      <div
+                        className={`p-3 rounded-xl w-fit mb-4 bg-gradient-to-r ${metric.color}`}
+                      >
+                        <IconComponent size={24} className="text-white" />
+                      </div>
+                      <p
+                        className={`text-sm font-semibold uppercase tracking-wide mb-2 ${
+                          darkMode ? "text-slate-400" : "text-slate-600"
+                        }`}
+                      >
+                        {metric.label}
+                      </p>
+                      <div className="flex items-end justify-between gap-2">
+                        <p
+                          className={`text-3xl font-bold ${
+                            darkMode ? "text-white" : "text-slate-900"
+                          }`}
+                        >
+                          {metric.value}
+                        </p>
+                        <p
+                          className={`text-sm font-semibold ${
+                            metric.change.startsWith("+")
+                              ? darkMode
+                                ? "text-green-400"
+                                : "text-green-600"
+                              : metric.change.startsWith("-")
+                              ? darkMode
+                                ? "text-blue-400"
+                                : "text-blue-600"
+                              : darkMode
+                              ? "text-slate-400"
+                              : "text-slate-600"
+                          }`}
+                        >
+                          {metric.change}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Pipeline Status */}
               <div
-                key={idx}
-                className={`rounded-3xl border backdrop-blur transition-all duration-300 transform hover:scale-105 ${
+                className={`rounded-3xl border backdrop-blur transition-all duration-300 ${
                   darkMode
-                    ? "bg-slate-800/40 border-slate-700/50 shadow-lg shadow-black/20"
-                    : "bg-white/60 border-blue-100/50 shadow-lg shadow-blue-500/5"
+                    ? "bg-slate-800/40 border-slate-700/50"
+                    : "bg-white/60 border-blue-100/50"
                 }`}
                 style={{
-                  animationDelay: `${idx * 50}ms`,
-                  animation: "fadeInUp 0.6s ease-out",
+                  animation: "fadeInUp 0.6s ease-out 150ms",
+                  animationFillMode: "both",
                 }}
               >
-                <div className="p-6">
-                  <div
-                    className={`p-3 rounded-xl w-fit mb-4 bg-gradient-to-r ${metric.color}`}
-                  >
-                    <IconComponent size={24} className="text-white" />
-                  </div>
-                  <p
-                    className={`text-sm font-semibold uppercase tracking-wide mb-2 ${
-                      darkMode ? "text-slate-400" : "text-slate-600"
-                    }`}
-                  >
-                    {metric.label}
-                  </p>
-                  <div className="flex items-end justify-between gap-2">
-                    <p
-                      className={`text-3xl font-bold ${
+                <div className="p-8 border-b transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-2">
+                    <PieChartIcon
+                      size={24}
+                      className={
+                        darkMode ? "text-indigo-400" : "text-indigo-600"
+                      }
+                    />
+                    <h3
+                      className={`text-2xl font-bold ${
                         darkMode ? "text-white" : "text-slate-900"
                       }`}
                     >
-                      {metric.value}
-                    </p>
-                    <p
-                      className={`text-sm font-semibold ${
-                        metric.change.startsWith("+")
-                          ? darkMode
-                            ? "text-green-400"
-                            : "text-green-600"
-                          : darkMode
-                          ? "text-blue-400"
-                          : "text-blue-600"
-                      }`}
-                    >
-                      {metric.change}
-                    </p>
+                      Pipeline Status
+                    </h3>
                   </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Pipeline Status */}
-          <div
-            className={`rounded-3xl border backdrop-blur transition-all duration-300 ${
-              darkMode
-                ? "bg-slate-800/40 border-slate-700/50"
-                : "bg-white/60 border-blue-100/50"
-            }`}
-            style={{
-              animation: "fadeInUp 0.6s ease-out 150ms",
-              animationFillMode: "both",
-            }}
-          >
-            <div className="p-8 border-b transition-all duration-300">
-              <div className="flex items-center gap-3 mb-2">
-                <PieChartIcon
-                  size={24}
-                  className={darkMode ? "text-indigo-400" : "text-indigo-600"}
-                />
-                <h3
-                  className={`text-2xl font-bold ${
-                    darkMode ? "text-white" : "text-slate-900"
-                  }`}
-                >
-                  Pipeline Status
-                </h3>
-              </div>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-slate-400" : "text-slate-600"
-                }`}
-              >
-                Candidate distribution across stages
-              </p>
-            </div>
-
-            <div className="p-8 space-y-4">
-              {analyticsData.pipelineStatus.map((item, idx) => (
-                <div key={idx}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span
-                      className={`font-semibold ${
-                        darkMode ? "text-slate-300" : "text-slate-700"
-                      }`}
-                    >
-                      {item.stage}
-                    </span>
-                    <span
-                      className={`font-bold ${
-                        darkMode ? "text-indigo-400" : "text-indigo-600"
-                      }`}
-                    >
-                      {item.count}
-                    </span>
-                  </div>
-                  <div
-                    className={`w-full h-2 rounded-full overflow-hidden transition-all duration-300 ${
-                      darkMode
-                        ? "bg-slate-700/50"
-                        : "bg-blue-100/50"
+                  <p
+                    className={`text-sm ${
+                      darkMode ? "text-slate-400" : "text-slate-600"
                     }`}
                   >
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
-                      style={{
-                        width: `${(item.count / 42) * 100}%`,
-                      }}
-                    ></div>
-                  </div>
+                    Candidate distribution across stages
+                  </p>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Top Jobs */}
-          <div
-            className={`rounded-3xl border backdrop-blur transition-all duration-300 ${
-              darkMode
-                ? "bg-slate-800/40 border-slate-700/50"
-                : "bg-white/60 border-blue-100/50"
-            }`}
-            style={{
-              animation: "fadeInUp 0.6s ease-out 200ms",
-              animationFillMode: "both",
-            }}
-          >
-            <div className="p-8 border-b transition-all duration-300">
-              <div className="flex items-center gap-3 mb-2">
-                <TrendingUp
-                  size={24}
-                  className={darkMode ? "text-green-400" : "text-green-600"}
-                />
-                <h3
-                  className={`text-2xl font-bold ${
-                    darkMode ? "text-white" : "text-slate-900"
-                  }`}
-                >
-                  Top Jobs
-                </h3>
+                <div className="p-8 space-y-4">
+                  {displayData.pipelineStatus.map((item, idx) => {
+                    const maxCount = Math.max(
+                      ...displayData.pipelineStatus.map((p) => p.count),
+                      1
+                    );
+                    return (
+                      <div key={idx}>
+                        <div className="flex justify-between items-center mb-2">
+                          <span
+                            className={`font-semibold ${
+                              darkMode ? "text-slate-300" : "text-slate-700"
+                            }`}
+                          >
+                            {item.stage}
+                          </span>
+                          <span
+                            className={`font-bold ${
+                              darkMode ? "text-indigo-400" : "text-indigo-600"
+                            }`}
+                          >
+                            {item.count}
+                          </span>
+                        </div>
+                        <div
+                          className={`w-full h-2 rounded-full overflow-hidden transition-all duration-300 ${
+                            darkMode ? "bg-slate-700/50" : "bg-blue-100/50"
+                          }`}
+                        >
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
+                            style={{
+                              width: `${(item.count / maxCount) * 100}%`,
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-slate-400" : "text-slate-600"
-                }`}
-              >
-                Most applications received
-              </p>
-            </div>
 
-            <div className="p-8 space-y-4">
-              {analyticsData.topJobs.map((job, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 ${
-                    darkMode
-                      ? "bg-slate-700/30 hover:bg-slate-700/50"
-                      : "bg-blue-50/50 hover:bg-blue-100/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <div
-                      className={`w-3 h-3 rounded-full ${
-                        idx === 0
-                          ? "bg-gradient-to-r from-blue-500 to-cyan-500"
-                          : idx === 1
-                          ? "bg-gradient-to-r from-purple-500 to-pink-500"
-                          : idx === 2
-                          ? "bg-gradient-to-r from-green-500 to-emerald-500"
-                          : "bg-gradient-to-r from-orange-500 to-red-500"
-                      }`}
-                    ></div>
-                    <span
-                      className={`font-semibold ${
-                        darkMode ? "text-slate-300" : "text-slate-700"
+              {/* Top Jobs */}
+              <div
+                className={`rounded-3xl border backdrop-blur transition-all duration-300 ${
+                  darkMode
+                    ? "bg-slate-800/40 border-slate-700/50"
+                    : "bg-white/60 border-blue-100/50"
+                }`}
+                style={{
+                  animation: "fadeInUp 0.6s ease-out 200ms",
+                  animationFillMode: "both",
+                }}
+              >
+                <div className="p-8 border-b transition-all duration-300">
+                  <div className="flex items-center gap-3 mb-2">
+                    <TrendingUp
+                      size={24}
+                      className={darkMode ? "text-green-400" : "text-green-600"}
+                    />
+                    <h3
+                      className={`text-2xl font-bold ${
+                        darkMode ? "text-white" : "text-slate-900"
                       }`}
                     >
-                      {job.title}
-                    </span>
+                      Top Jobs
+                    </h3>
                   </div>
-                  <span
-                    className={`font-bold px-3 py-1 rounded-lg ${
-                      darkMode
-                        ? "bg-slate-600/50 text-slate-200"
-                        : "bg-slate-200 text-slate-700"
+                  <p
+                    className={`text-sm ${
+                      darkMode ? "text-slate-400" : "text-slate-600"
                     }`}
                   >
-                    {job.applications}
-                  </span>
+                    Most applications received
+                  </p>
                 </div>
-              ))}
+
+                <div className="p-8 space-y-4">
+                  {displayData.topJobs.length > 0 ? (
+                    displayData.topJobs.map((job, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 ${
+                          darkMode
+                            ? "bg-slate-700/30 hover:bg-slate-700/50"
+                            : "bg-blue-50/50 hover:bg-blue-100/50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <div
+                            className={`w-3 h-3 rounded-full ${
+                              idx === 0
+                                ? "bg-gradient-to-r from-blue-500 to-cyan-500"
+                                : idx === 1
+                                ? "bg-gradient-to-r from-purple-500 to-pink-500"
+                                : idx === 2
+                                ? "bg-gradient-to-r from-green-500 to-emerald-500"
+                                : "bg-gradient-to-r from-orange-500 to-red-500"
+                            }`}
+                          ></div>
+                          <span
+                            className={`font-semibold ${
+                              darkMode ? "text-slate-300" : "text-slate-700"
+                            }`}
+                          >
+                            {job.title}
+                          </span>
+                        </div>
+                        <span
+                          className={`font-bold px-3 py-1 rounded-lg ${
+                            darkMode
+                              ? "bg-slate-600/50 text-slate-200"
+                              : "bg-slate-200 text-slate-700"
+                          }`}
+                        >
+                          {job.applications}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <p
+                        className={`${
+                          darkMode ? "text-slate-400" : "text-slate-600"
+                        }`}
+                      >
+                        No job data available yet
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </main>
 
       {/* CSS for animations */}

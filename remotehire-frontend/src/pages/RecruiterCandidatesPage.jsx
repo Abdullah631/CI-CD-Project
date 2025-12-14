@@ -7,9 +7,8 @@ import {
   Briefcase,
   ExternalLink,
   ChevronDown,
-  Menu,
-  X,
 } from "lucide-react";
+import RecruiterNav from "../components/RecruiterNav";
 
 export const RecruiterCandidatesPage = () => {
   const [candidates, setCandidates] = useState([]);
@@ -18,9 +17,9 @@ export const RecruiterCandidatesPage = () => {
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem("darkMode") === "true"
   );
+  const [userName, setUserName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [scheduleForm, setScheduleForm] = useState({
     candidate_id: null,
@@ -31,6 +30,22 @@ export const RecruiterCandidatesPage = () => {
   const [scheduleMessage, setScheduleMessage] = useState("");
 
   const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUserName(userData.username || "User");
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     fetchCandidates();
@@ -158,117 +173,15 @@ export const RecruiterCandidatesPage = () => {
           : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
       }`}
     >
-      {/* Header */}
-      <header
-        className={`sticky top-0 z-40 backdrop-blur-lg border-b transition-all duration-300 ${
-          darkMode
-            ? "bg-slate-800/80 border-slate-700/50"
-            : "bg-white/80 border-blue-100/50"
-        }`}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-4">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div
-                className={`p-2 rounded-lg ${
-                  darkMode
-                    ? "bg-indigo-600/20 text-indigo-400"
-                    : "bg-blue-600/10 text-blue-600"
-                }`}
-              >
-                <Users size={24} />
-              </div>
-              <h1
-                className={`text-2xl font-bold hidden sm:block ${
-                  darkMode ? "text-white" : "text-slate-900"
-                }`}
-              >
-                Candidates
-              </h1>
-            </div>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-1">
-              <button
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-300 hover:bg-slate-700/50"
-                    : "text-slate-700 hover:bg-blue-100/50"
-                }`}
-              >
-                All Candidates
-              </button>
-              <button
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-400 hover:bg-slate-700/50"
-                    : "text-slate-600 hover:bg-blue-100/50"
-                }`}
-              >
-                Reviewed
-              </button>
-            </nav>
-
-            {/* Right Actions */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setDarkMode(!darkMode);
-                  localStorage.setItem("darkMode", !darkMode);
-                }}
-                className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                  darkMode
-                    ? "bg-slate-700 hover:bg-slate-600 text-yellow-400"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                }`}
-              >
-                {darkMode ? "☀️" : "🌙"}
-              </button>
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className={`md:hidden p-2 rounded-lg transition-all duration-300 ${
-                  darkMode
-                    ? "bg-slate-700 hover:bg-slate-600"
-                    : "bg-slate-100 hover:bg-slate-200"
-                }`}
-              >
-                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <nav
-              className={`mt-4 space-y-2 md:hidden animate-slideDown ${
-                darkMode ? "bg-slate-700/30" : "bg-blue-50/30"
-              } p-4 rounded-xl`}
-            >
-              <button
-                className={`block w-full text-left px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-300 hover:bg-slate-700/50"
-                    : "text-slate-700 hover:bg-blue-100/50"
-                }`}
-              >
-                All Candidates
-              </button>
-              <button
-                className={`block w-full text-left px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                  darkMode
-                    ? "text-slate-400 hover:bg-slate-700/50"
-                    : "text-slate-600 hover:bg-blue-100/50"
-                }`}
-              >
-                Reviewed
-              </button>
-            </nav>
-          )}
-        </div>
-      </header>
+      <RecruiterNav
+        darkMode={darkMode}
+        onToggleDarkMode={() => {
+          setDarkMode(!darkMode);
+          localStorage.setItem("darkMode", !darkMode);
+        }}
+        userName={userName}
+        currentPage="candidates"
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">

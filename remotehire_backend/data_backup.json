@@ -1,0 +1,560 @@
+[
+{
+  "model": "loginapi.user",
+  "pk": 1,
+  "fields": {
+    "username": "bilalkh",
+    "password": "112233",
+    "email": "hello000000@gmail.com",
+    "role": "recruiter",
+    "date": "2025-11-10T19:55:23.162Z",
+    "photo": "photos/851058_NF80UGF.jpg",
+    "full_name": "",
+    "phone_number": "",
+    "cv": "",
+    "cv_metadata": {},
+    "cv_last_updated": null
+  }
+},
+{
+  "model": "loginapi.user",
+  "pk": 2,
+  "fields": {
+    "username": "ali",
+    "password": "1234",
+    "email": "ali@gmail.com",
+    "role": "recruiter",
+    "date": "2025-11-11T05:11:16.971Z",
+    "photo": "photos/INTER.jpeg",
+    "full_name": "",
+    "phone_number": "",
+    "cv": "",
+    "cv_metadata": {},
+    "cv_last_updated": null
+  }
+},
+{
+  "model": "loginapi.user",
+  "pk": 3,
+  "fields": {
+    "username": "ali12",
+    "password": "112233",
+    "email": "bilal.khawar04@gmail.com",
+    "role": "candidate",
+    "date": "2025-11-11T18:46:12.387Z",
+    "photo": "photos/WhatsApp_Image_2025-10-08_at_20.38.33_b2e32109.jpg",
+    "full_name": "",
+    "phone_number": "",
+    "cv": "",
+    "cv_metadata": {},
+    "cv_last_updated": null
+  }
+},
+{
+  "model": "loginapi.user",
+  "pk": 4,
+  "fields": {
+    "username": "ali21",
+    "password": "112233",
+    "email": "bilal.khawar0@gmail.com",
+    "role": "candidate",
+    "date": "2025-11-11T18:49:42.618Z",
+    "photo": "photos/WhatsApp_Image_2025-10-05_at_12.52.41_64f66784.jpg",
+    "full_name": "",
+    "phone_number": "",
+    "cv": "",
+    "cv_metadata": {},
+    "cv_last_updated": null
+  }
+},
+{
+  "model": "loginapi.user",
+  "pk": 5,
+  "fields": {
+    "username": "bil",
+    "password": "112233",
+    "email": "bilal.khawar0000@gmail.com",
+    "role": "candidate",
+    "date": "2025-11-11T18:51:22.867Z",
+    "photo": "photos/WhatsApp_Image_2025-10-08_at_20.38.33_b2e32109_crk4OKm.jpg",
+    "full_name": "Sheikh Abdullah Arshad",
+    "phone_number": "",
+    "cv": "resumes/Abdullah_Arshad_fullstack_NXYBnJq.pdf",
+    "cv_metadata": {
+      "full_name": "SHEIKH ABDULLAH ARSHAD",
+      "email": "abdullah.arshad1823@gmail.com",
+      "phone": "+923324920988",
+      "current_title": null,
+      "years_of_experience": 0,
+      "skills": [
+        "Git/GitHub",
+        "Agile (Scrum)",
+        "Responsive Web Design",
+        "CI/CD (Basic)",
+        "Database Design",
+        "ADO.NET",
+        "MongoDB",
+        "MySQL",
+        "HTML5",
+        "CSS3"
+      ],
+      "programming_languages": [
+        "Java",
+        "C#",
+        "Python",
+        "JavaScript",
+        "C++",
+        "C"
+      ],
+      "frameworks": [
+        "React",
+        ".NET Framework",
+        "Java Servlets",
+        "Node.JS",
+        "Express.JS",
+        "Flask",
+        "Django",
+        "Tailwind CSS",
+        "Bootstrap",
+        "Socket.IO",
+        "Chess.js"
+      ],
+      "education": [
+        {
+          "degree": "Bs Software Engineering",
+          "field": "Software Engineering",
+          "institution": "FCIT PU"
+        },
+        {
+          "degree": "Intermediate",
+          "field": null,
+          "institution": "Aspire College"
+        },
+        {
+          "degree": "Matriculation",
+          "field": null,
+          "institution": "Ali Public School"
+        }
+      ],
+      "work_experience": [
+        {
+          "title": "MLSA",
+          "company": "FCIT",
+          "years": 0,
+          "key_achievements": [
+            "Managed programming competitions",
+            "Covered the events as a videographer"
+          ]
+        },
+        {
+          "title": "Sports Society Member",
+          "company": "FCIT",
+          "years": 0,
+          "key_achievements": [
+            "Managed eSport competitions",
+            "Set up matches for tournaments"
+          ]
+        },
+        {
+          "title": "Photographer & Videographer",
+          "company": "FCIT (FIMS)",
+          "years": 1,
+          "key_achievements": [
+            "Covered university events as a photographer",
+            "Covered university events as a videographer"
+          ]
+        }
+      ],
+      "certifications": [],
+      "languages": [],
+      "specializations": [
+        "Frontend Development",
+        "Backend Development",
+        "Database Design"
+      ],
+      "soft_skills": [
+        "Team Collaboration",
+        "Problem-Solving",
+        "Event Management"
+      ]
+    },
+    "cv_last_updated": "2025-12-12T09:53:41.546Z"
+  }
+},
+{
+  "model": "loginapi.user",
+  "pk": 6,
+  "fields": {
+    "username": "port",
+    "password": "112233",
+    "email": "port@gmail.com",
+    "role": "candidate",
+    "date": "2025-11-11T18:54:37.978Z",
+    "photo": "photos/roronoa-zoro-swordfighter-desktop-wallpaper-4k.jpg",
+    "full_name": "",
+    "phone_number": "",
+    "cv": "",
+    "cv_metadata": {},
+    "cv_last_updated": null
+  }
+},
+{
+  "model": "loginapi.user",
+  "pk": 7,
+  "fields": {
+    "username": "yup",
+    "password": "12345",
+    "email": "yup@gmail.com",
+    "role": "recruiter",
+    "date": "2025-11-11T19:20:58.966Z",
+    "photo": "photos/goku-ready-for-battle-desert-desktop-wallpaper-4k.jpg",
+    "full_name": "",
+    "phone_number": "",
+    "cv": "",
+    "cv_metadata": {},
+    "cv_last_updated": null
+  }
+},
+{
+  "model": "loginapi.user",
+  "pk": 8,
+  "fields": {
+    "username": "huh",
+    "password": "12",
+    "email": "huh@gmil.com",
+    "role": "candidate",
+    "date": "2025-11-11T19:24:20.209Z",
+    "photo": "photos/goku-ready-for-battle-desert-desktop-wallpaper-4k_eMMU8gJ.jpg",
+    "full_name": "",
+    "phone_number": "",
+    "cv": "",
+    "cv_metadata": {},
+    "cv_last_updated": null
+  }
+},
+{
+  "model": "loginapi.user",
+  "pk": 9,
+  "fields": {
+    "username": "rar",
+    "password": "12",
+    "email": "rar@gmail.com",
+    "role": "recruiter",
+    "date": "2025-11-11T19:25:06.717Z",
+    "photo": "photos/demon-slayer-zenitsu-thunder-breathing-first-form-desktop-wallpaper.jpg",
+    "full_name": "",
+    "phone_number": "",
+    "cv": "",
+    "cv_metadata": {},
+    "cv_last_updated": null
+  }
+},
+{
+  "model": "loginapi.user",
+  "pk": 10,
+  "fields": {
+    "username": "recruiter1",
+    "password": "pass123",
+    "email": "rec1@example.com",
+    "role": "recruiter",
+    "date": "2025-11-18T11:39:30.560Z",
+    "photo": "photos/default.png",
+    "full_name": "",
+    "phone_number": "",
+    "cv": "",
+    "cv_metadata": {},
+    "cv_last_updated": null
+  }
+},
+{
+  "model": "loginapi.user",
+  "pk": 11,
+  "fields": {
+    "username": "khawarsahab07",
+    "password": "",
+    "email": "khawarsahab07@gmail.com",
+    "role": "candidate",
+    "date": "2025-12-11T19:30:32.369Z",
+    "photo": "",
+    "full_name": "Bilal Khawar",
+    "phone_number": "+923098809081",
+    "cv": "resumes/Resume_RSHSQlq.docx",
+    "cv_metadata": {
+      "full_name": "Bilal Khawar",
+      "email": "bilal@example.com",
+      "phone": "+1-555-0123",
+      "current_title": "Senior Full Stack Developer",
+      "years_of_experience": 6,
+      "skills": [
+        "Python",
+        "Django",
+        "React",
+        "JavaScript",
+        "PostgreSQL",
+        "REST APIs",
+        "Machine Learning",
+        "Data Analysis"
+      ],
+      "programming_languages": [
+        "Python",
+        "JavaScript",
+        "TypeScript",
+        "SQL"
+      ],
+      "frameworks": [
+        "Django",
+        "React",
+        "FastAPI",
+        "TensorFlow"
+      ],
+      "education": [
+        {
+          "degree": "Bachelor of Science",
+          "field": "Computer Science",
+          "institution": "University of Engineering"
+        }
+      ],
+      "work_experience": [
+        {
+          "title": "Senior Developer",
+          "company": "Tech Company A",
+          "years": 2,
+          "key_achievements": [
+            "Led team of 5",
+            "Improved performance"
+          ]
+        },
+        {
+          "title": "Full Stack Developer",
+          "company": "Tech Startup B",
+          "years": 3,
+          "key_achievements": [
+            "Built platform",
+            "Scaled to 10k users"
+          ]
+        }
+      ],
+      "certifications": [
+        "AWS Certified Solutions Architect",
+        "Google Cloud Associate"
+      ],
+      "languages": [
+        "English",
+        "Urdu"
+      ],
+      "specializations": [
+        "Web Development",
+        "AI/ML",
+        "Cloud Architecture"
+      ],
+      "soft_skills": [
+        "Leadership",
+        "Communication",
+        "Problem Solving"
+      ]
+    },
+    "cv_last_updated": "2025-12-11T20:04:04.974Z"
+  }
+},
+{
+  "model": "loginapi.job",
+  "pk": 1,
+  "fields": {
+    "title": "hello",
+    "description": "hi this is a job",
+    "status": "active",
+    "posted_by": 2,
+    "created_at": "2025-11-24T18:14:18.417Z",
+    "requirements": {
+      "years_required": 5,
+      "required_skills": [
+        "Python",
+        "Django",
+        "React",
+        "PostgreSQL",
+        "REST APIs"
+      ],
+      "required_languages": [
+        "English"
+      ],
+      "required_frameworks": [
+        "Django",
+        "React"
+      ],
+      "minimum_education": "Bachelor",
+      "nice_to_have": [
+        "Machine Learning",
+        "AWS"
+      ]
+    }
+  }
+},
+{
+  "model": "loginapi.job",
+  "pk": 3,
+  "fields": {
+    "title": "Senior web developer",
+    "description": "senior job developer required with proficiency in react and python django and node.js and next.js",
+    "status": "active",
+    "posted_by": 2,
+    "created_at": "2025-12-12T06:45:00.748Z",
+    "requirements": {
+      "required_skills": [
+        "python",
+        "django",
+        "react"
+      ],
+      "required_experience_years": 0,
+      "required_education": "",
+      "required_languages": [],
+      "required_certifications": []
+    }
+  }
+},
+{
+  "model": "loginapi.job",
+  "pk": 4,
+  "fields": {
+    "title": "Python Developer",
+    "description": "Knows Django, Flask, FAST API, OpenCV, Numpy, Pandas",
+    "status": "active",
+    "posted_by": 2,
+    "created_at": "2025-12-12T09:25:28.731Z",
+    "requirements": {
+      "required_skills": [
+        "mongodb",
+        "html5",
+        "css3"
+      ],
+      "required_experience_years": 0,
+      "required_education": "",
+      "required_languages": [],
+      "required_certifications": []
+    }
+  }
+},
+{
+  "model": "loginapi.job",
+  "pk": 5,
+  "fields": {
+    "title": "tuntun",
+    "description": "tuntunsahur",
+    "status": "active",
+    "posted_by": 2,
+    "created_at": "2025-12-12T09:57:29.193Z",
+    "requirements": {}
+  }
+},
+{
+  "model": "loginapi.application",
+  "pk": 6,
+  "fields": {
+    "job": 1,
+    "applicant": 11,
+    "created_at": "2025-12-12T03:55:43.512Z",
+    "similarity_score": 79.0
+  }
+},
+{
+  "model": "loginapi.application",
+  "pk": 7,
+  "fields": {
+    "job": 3,
+    "applicant": 11,
+    "created_at": "2025-12-12T08:47:29.507Z",
+    "similarity_score": 69.0
+  }
+},
+{
+  "model": "loginapi.application",
+  "pk": 8,
+  "fields": {
+    "job": 4,
+    "applicant": 11,
+    "created_at": "2025-12-12T09:25:36.624Z",
+    "similarity_score": 0.0
+  }
+},
+{
+  "model": "loginapi.application",
+  "pk": 9,
+  "fields": {
+    "job": 5,
+    "applicant": 5,
+    "created_at": "2025-12-12T09:58:40.149Z",
+    "similarity_score": 0.0
+  }
+},
+{
+  "model": "loginapi.interview",
+  "pk": 1,
+  "fields": {
+    "job": 1,
+    "recruiter": 2,
+    "candidate": 11,
+    "scheduled_at": "2025-12-11T21:32:00Z",
+    "status": "accepted",
+    "created_at": "2025-12-11T21:26:39.826Z"
+  }
+},
+{
+  "model": "loginapi.interview",
+  "pk": 2,
+  "fields": {
+    "job": 1,
+    "recruiter": 2,
+    "candidate": 11,
+    "scheduled_at": "2025-12-11T22:35:00Z",
+    "status": "accepted",
+    "created_at": "2025-12-11T21:55:48.442Z"
+  }
+},
+{
+  "model": "loginapi.interview",
+  "pk": 3,
+  "fields": {
+    "job": 1,
+    "recruiter": 2,
+    "candidate": 11,
+    "scheduled_at": "2025-12-12T05:10:00Z",
+    "status": "accepted",
+    "created_at": "2025-12-12T04:00:27.803Z"
+  }
+},
+{
+  "model": "loginapi.interview",
+  "pk": 4,
+  "fields": {
+    "job": 3,
+    "recruiter": 2,
+    "candidate": 11,
+    "scheduled_at": "2025-12-12T08:52:00Z",
+    "status": "accepted",
+    "created_at": "2025-12-12T08:48:28.399Z"
+  }
+},
+{
+  "model": "loginapi.interview",
+  "pk": 5,
+  "fields": {
+    "job": 4,
+    "recruiter": 2,
+    "candidate": 11,
+    "scheduled_at": "2025-12-12T09:27:00Z",
+    "status": "accepted",
+    "created_at": "2025-12-12T09:26:45.780Z"
+  }
+},
+{
+  "model": "loginapi.interview",
+  "pk": 6,
+  "fields": {
+    "job": 5,
+    "recruiter": 2,
+    "candidate": 5,
+    "scheduled_at": "2025-12-12T09:59:00Z",
+    "status": "accepted",
+    "created_at": "2025-12-12T09:59:09.294Z"
+  }
+}
+]

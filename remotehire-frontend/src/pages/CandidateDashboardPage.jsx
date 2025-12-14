@@ -8,17 +8,15 @@ import {
   TrendingUp,
   Calendar,
   Trash2,
-  Menu,
-  X,
 } from "lucide-react";
+import CandidateNav from "../components/CandidateNav";
 
+// Candidate Dashboard Page Component
 export const CandidateDashboardPage = () => {
   const [userName, setUserName] = useState("");
-  const [darkMode, setDarkMode] = useState(() => {
-    const stored = localStorage.getItem("theme");
-    if (stored) return stored === "dark";
-    return document.documentElement.classList.contains("dark");
-  });
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("darkMode") === "true"
+  );
   const [applicationsCount, setApplicationsCount] = useState(0);
   const [activeJobsCount, setActiveJobsCount] = useState(0);
   const [applications, setApplications] = useState([]);
@@ -28,6 +26,10 @@ export const CandidateDashboardPage = () => {
   const [success, setSuccess] = useState("");
 
   const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
 
   // Load user data
   useEffect(() => {
@@ -152,100 +154,15 @@ export const CandidateDashboardPage = () => {
           : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
       }`}
     >
-      {/* Header */}
-      <header
-        className={`sticky top-0 z-40 backdrop-blur-lg border-b transition-all duration-300 ${
-          darkMode
-            ? "bg-slate-800/80 border-slate-700/50"
-            : "bg-white/80 border-blue-100/50"
-        }`}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <a href="/#" className="flex items-center gap-3 group">
-              <div
-                className={`p-2 rounded-lg transition-all duration-300 group-hover:scale-110 ${
-                  darkMode
-                    ? "bg-indigo-600/20 text-indigo-400"
-                    : "bg-blue-100 text-blue-600"
-                }`}
-              >
-                <Briefcase size={24} />
-              </div>
-              <span
-                className={`text-xl font-bold hidden sm:inline transition-colors duration-300 ${
-                  darkMode ? "text-white" : "text-slate-900"
-                }`}
-              >
-                RemoteHire.io
-              </span>
-            </a>
-
-            {/* Right Actions */}
-            <div className="flex items-center gap-2 sm:gap-4">
-              {/* Dark Mode Toggle */}
-              <button
-                onClick={toggleDarkMode}
-                className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                  darkMode
-                    ? "bg-slate-700 hover:bg-slate-600 text-yellow-400"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                }`}
-              >
-                {darkMode ? "☀️" : "🌙"}
-              </button>
-
-              {/* Profile Link */}
-              <a
-                href="/#/profile"
-                className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105 ${
-                  darkMode
-                    ? "text-indigo-400 hover:bg-slate-700"
-                    : "text-blue-600 hover:bg-blue-100"
-                }`}
-              >
-                <User size={18} />
-                Profile
-              </a>
-
-              {/* Interviews Link */}
-              <a
-                href="/#/candidate-interviews"
-                className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105 ${
-                  darkMode
-                    ? "text-indigo-400 hover:bg-slate-700"
-                    : "text-blue-600 hover:bg-blue-100"
-                }`}
-              >
-                <Calendar size={18} />
-                Interviews
-              </a>
-
-              {/* User Name */}
-              <span
-                className={`text-sm font-semibold hidden sm:inline ${
-                  darkMode ? "text-slate-300" : "text-slate-600"
-                }`}
-              >
-                {userName}
-              </span>
-
-              {/* Logout Button */}
-              <button
-                onClick={handleLogout}
-                className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                  darkMode
-                    ? "bg-red-600/20 text-red-400 hover:bg-red-600/30"
-                    : "bg-red-100 text-red-600 hover:bg-red-200"
-                }`}
-              >
-                <LogOut size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <CandidateNav
+        darkMode={darkMode}
+        onToggleDarkMode={() => {
+          setDarkMode(!darkMode);
+          localStorage.setItem("darkMode", !darkMode);
+        }}
+        userName={userName}
+        currentPage="dashboard"
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
