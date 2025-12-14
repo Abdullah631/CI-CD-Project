@@ -357,7 +357,8 @@ def add_job(request):
             title=serializer.validated_data['title'],
             description=serializer.validated_data.get('description', ''),
             status=serializer.validated_data.get('status', 'active'),
-            posted_by=user
+            posted_by=user,
+            requirements=serializer.validated_data.get('requirements', {}),
         )
         return Response({'message': 'Job created successfully', 'job_id': job.id}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

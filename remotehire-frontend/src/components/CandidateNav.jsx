@@ -110,16 +110,7 @@ export const CandidateNav = ({
                   {userName}
                 </span>
               )}
-              <button
-                title="Settings"
-                className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                  darkMode
-                    ? "bg-slate-700/40 border-slate-600/50 text-indigo-400 hover:bg-slate-700/60"
-                    : "bg-white/70 border-blue-100 text-slate-700 hover:bg-white"
-                }`}
-              >
-                <Settings size={20} />
-              </button>
+
               <button
                 onClick={handleLogout}
                 title="Logout"
