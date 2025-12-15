@@ -15,6 +15,8 @@ import { GitHubCallbackPage } from "./pages/GitHubCallbackPage";
 import { LinkedInCallbackPage } from "./pages/LinkedInCallbackPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { CandidateDetailsPage } from "./pages/CandidateDetailsPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 
 export const App = () => {
   const [darkMode, setDarkMode] = useState(() => {
@@ -72,6 +74,12 @@ export const App = () => {
       break;
     case currentPath === "/signup":
       page = <SignUpPage />;
+      break;
+    case currentPath.startsWith("/forgot-password"):
+      page = <ForgotPasswordPage />;
+      break;
+    case currentPath.startsWith("/reset-password"):
+      page = <ResetPasswordPage />;
       break;
     case currentPath === "/profile":
       page = <ProfilePage />;

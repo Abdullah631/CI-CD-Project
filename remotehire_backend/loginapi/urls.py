@@ -9,6 +9,7 @@ from .views import recruiter_dashboard_stats, recruiter_job_applicants, recruite
 from .views import google_oauth, github_oauth, linkedin_oauth
 from .views import candidate_profile, upload_cv, get_cv_metadata, download_cv, view_cv, delete_cv
 from .views import recruiter_analytics
+from .views import request_password_reset, reset_password
 
 urlpatterns = [
     path('register/', register_user, name='register_user'),
@@ -47,6 +48,9 @@ urlpatterns = [
     path('auth/google/', google_oauth, name='google_oauth'),
     path('auth/github/', github_oauth, name='github_oauth'),
     path('auth/linkedin/', linkedin_oauth, name='linkedin_oauth'),
+    # Password reset
+    path('password/forgot/', request_password_reset, name='request_password_reset'),
+    path('password/reset/', reset_password, name='reset_password'),
     # Social auth (OLD - keep for backwards compatibility if needed)
     path('auth/google/login/', google_login, name='google_login'),
     path('auth/google/callback/', google_callback, name='google_callback'),

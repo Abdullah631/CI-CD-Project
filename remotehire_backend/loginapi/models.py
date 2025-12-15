@@ -62,3 +62,15 @@ class Interview(models.Model):
 
     def __str__(self):
         return f"Interview: {self.job.title} with {self.candidate.username} at {self.scheduled_at}"
+
+
+class PasswordResetToken(models.Model):
+    user = models.ForeignKey(User, related_name='password_reset_tokens', on_delete=models.CASCADE)
+    token = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"ResetToken for {self.user.username} (used={self.used})"

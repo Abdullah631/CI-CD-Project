@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 import { Mail, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import LandingNav from "../components/LandingNav";
@@ -297,7 +298,7 @@ export const SignInPage = () => {
                       Password
                     </label>
                     <a
-                      href="#"
+                      href="/#/forgot-password"
                       className={`text-xs font-semibold hover:underline ${
                         darkMode ? "text-indigo-400" : "text-blue-600"
                       }`}
