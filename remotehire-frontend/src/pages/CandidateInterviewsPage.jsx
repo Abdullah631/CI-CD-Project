@@ -5,6 +5,7 @@ import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import CandidateNav from "../components/CandidateNav";
 import dashImg from "../assets/dash.jpg";
 import { API_BASE_URL } from "../config";
+import CandidateNav from "../components/CandidateNav";
 
 /* ================= THEME ================= */
 const theme = {

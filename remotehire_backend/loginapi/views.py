@@ -15,6 +15,9 @@ from datetime import datetime, timedelta
 from .decorators import recruiter_required
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+from django.core.mail import send_mail
+from django.utils import timezone
+import secrets
 
 
 def _get_user_from_bearer(request):
@@ -91,6 +94,105 @@ def login_user(request):
         }, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+def _build_frontend_reset_url(request, token):
+    base = getattr(settings, 'FRONTEND_BASE_URL', 'http://localhost:5173')
+    # If no explicit base URL, attempt to derive from request host
+    if not base:
+        try:
+            base = request.build_absolute_uri('/')[:-1]
+        except Exception:
+            base = 'http://localhost:5173'
+    return f"{base}/#/reset-password?token={token}"
+
+
+@api_view(['POST'])
+@csrf_exempt
+def request_password_reset(request):
+    email = request.data.get('email')
+    if not email:
+        return Response({'error': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        # Avoid leaking which emails exist
+        return Response({'message': 'If an account exists for that email, a reset link has been sent.'}, status=status.HTTP_200_OK)
+
+    # Clean up old tokens for this user
+    PasswordResetToken.objects.filter(user=user, used=False, expires_at__lt=timezone.now()).delete()
+
+    token = secrets.token_urlsafe(32)
+    expires_at = timezone.now() + timedelta(hours=getattr(settings, 'PASSWORD_RESET_TOKEN_EXPIRY_HOURS', 1))
+    PasswordResetToken.objects.create(user=user, token=token, expires_at=expires_at)
+
+    reset_link = _build_frontend_reset_url(request, token)
+    subject = 'RemoteHire.io password reset'
+    message = (
+        'You requested a password reset for your RemoteHire.io account.\n\n'
+        f'Use the link below to set a new password (valid for {getattr(settings, "PASSWORD_RESET_TOKEN_EXPIRY_HOURS", 1)} hour(s)).\n'
+        f'{reset_link}\n\n'
+        'If you did not request this, you can ignore this email.'
+    )
+
+    try:
+        send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+    except Exception as exc:
+        print('request_password_reset: email send failed', repr(exc))
+        # In debug, still return the reset URL to unblock local testing
+        if settings.DEBUG:
+            return Response({
+                'message': 'Email send failed; use the reset link for local testing.',
+                'reset_url': reset_link
+            }, status=status.HTTP_200_OK)
+        return Response({'error': 'Unable to send reset email. Please try again later.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    response_payload = {'message': 'If an account exists for that email, a reset link has been sent.'}
+    if settings.DEBUG:
+        response_payload['reset_url'] = reset_link
+
+    return Response(response_payload, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@csrf_exempt
+def reset_password(request):
+    token = request.data.get('token')
+    new_password = request.data.get('password')
+
+    if not token or not new_password:
+        return Response({'error': 'Token and new password are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if len(new_password) < 6:
+        return Response({'error': 'Password must be at least 6 characters long.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        token_obj = PasswordResetToken.objects.get(token=token)
+    except PasswordResetToken.DoesNotExist:
+        return Response({'error': 'Invalid or expired token.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if token_obj.used:
+        return Response({'error': 'This token has already been used.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if token_obj.expires_at < timezone.now():
+        token_obj.used = True
+        token_obj.used_at = timezone.now()
+        token_obj.save(update_fields=['used', 'used_at'])
+        return Response({'error': 'This token has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = token_obj.user
+    user.password = new_password
+    user.save(update_fields=['password'])
+
+    # Invalidate the token and any siblings
+    now = timezone.now()
+    PasswordResetToken.objects.filter(user=user, used=False).update(used=True, used_at=now)
+    token_obj.used = True
+    token_obj.used_at = now
+    token_obj.save(update_fields=['used', 'used_at'])
+
+    return Response({'message': 'Password has been reset successfully.'}, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -357,7 +459,8 @@ def add_job(request):
             title=serializer.validated_data['title'],
             description=serializer.validated_data.get('description', ''),
             status=serializer.validated_data.get('status', 'active'),
-            posted_by=user
+            posted_by=user,
+            requirements=serializer.validated_data.get('requirements', {}),
         )
         return Response({'message': 'Job created successfully', 'job_id': job.id}, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

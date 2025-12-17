@@ -94,6 +94,8 @@ export default function RecruiterAnalyticsPage() {
     metrics: [],
   };
 
+  const displayData = analyticsData || defaultAnalyticsData;
+
   return (
     <div
       className="min-h-screen"

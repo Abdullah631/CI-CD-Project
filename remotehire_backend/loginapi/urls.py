@@ -49,6 +49,9 @@ urlpatterns = [
     path('auth/google/', google_oauth, name='google_oauth'),
     path('auth/github/', github_oauth, name='github_oauth'),
     path('auth/linkedin/', linkedin_oauth, name='linkedin_oauth'),
+    # Password reset
+    path('password/forgot/', request_password_reset, name='request_password_reset'),
+    path('password/reset/', reset_password, name='reset_password'),
     # Social auth (OLD - keep for backwards compatibility if needed)
     path('auth/google/login/', google_login, name='google_login'),
     path('auth/google/callback/', google_callback, name='google_callback'),

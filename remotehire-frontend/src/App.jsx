@@ -112,6 +112,12 @@ export const App = () => {
     case currentPath === "/signup":
       page = <SignUpPage />;
       break;
+    case currentPath.startsWith("/forgot-password"):
+      page = <ForgotPasswordPage />;
+      break;
+    case currentPath.startsWith("/reset-password"):
+      page = <ResetPasswordPage />;
+      break;
     case currentPath === "/profile":
       page = <ProfilePage />;
       break;

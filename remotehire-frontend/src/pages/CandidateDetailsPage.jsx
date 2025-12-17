@@ -32,6 +32,22 @@ export default function CandidateDetailsPage() {
 
   /* ================= FETCH ================= */
   useEffect(() => {
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUserName(userData.username || "User");
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     if (!candidateId) {
       setError("Invalid candidate ID");
       setLoading(false);

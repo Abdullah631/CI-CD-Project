@@ -40,6 +40,8 @@ GITHUB_OAUTH_CLIENT_SECRET = os.getenv('GITHUB_OAUTH_CLIENT_SECRET')
 LINKEDIN_OAUTH_CLIENT_ID = os.getenv('LINKEDIN_OAUTH_CLIENT_ID')
 LINKEDIN_OAUTH_CLIENT_SECRET = os.getenv('LINKEDIN_OAUTH_CLIENT_SECRET')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:5173')
+PASSWORD_RESET_TOKEN_EXPIRY_HOURS = int(os.getenv('PASSWORD_RESET_TOKEN_EXPIRY_HOURS', '1'))
 
 
 # Application definition
@@ -194,3 +196,12 @@ CORS_ALLOW_CREDENTIALS = True
 # During local development allow all origins to simplify testing.
 # Remove or change this in production.
 CORS_ALLOW_ALL_ORIGINS = True
+
+# Email settings
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', '')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'no-reply@remotehire.io')
