@@ -16,3 +16,6 @@ google-auth-httplib2
 python-dotenv
 google-generativeai
 pypdf
+psycopg2-binary
+boto3
+django-storages

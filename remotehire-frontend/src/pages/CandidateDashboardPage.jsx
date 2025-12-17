@@ -1,636 +1,273 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-import {
-  Briefcase,
-  CheckCircle2,
-  LogOut,
-  User,
-  TrendingUp,
-  Calendar,
-  Trash2,
-  Menu,
-  X,
-} from "lucide-react";
+import EmailIcon from "@mui/icons-material/Email";
+import WorkIcon from "@mui/icons-material/Work";
+// icons: email for applications, work for open positions
+import CandidateNav from "../components/CandidateNav";
+import dashImg from "../assets/dash.jpg";
+import { API_BASE_URL } from "../config";
 
-export const CandidateDashboardPage = () => {
+/* ================= THEME ================= */
+const theme = {
+  sage: "#B7C7B1",
+  cinnamon: "#B87B4B",
+  sand: "#CDB08E",
+  cream: "#FBF6E6",
+  clay: "#6E4B2C",
+};
+
+export default function CandidateDashboardPage() {
   const [userName, setUserName] = useState("");
-  const [darkMode, setDarkMode] = useState(() => {
-    const stored = localStorage.getItem("theme");
-    if (stored) return stored === "dark";
-    return document.documentElement.classList.contains("dark");
-  });
   const [applicationsCount, setApplicationsCount] = useState(0);
   const [activeJobsCount, setActiveJobsCount] = useState(0);
   const [applications, setApplications] = useState([]);
-  const [statsLoading, setStatsLoading] = useState(true);
-  const [applicationsLoading, setApplicationsLoading] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingApps, setLoadingApps] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const token = localStorage.getItem("token");
 
-  // Load user data
+  /* ================= USER ================= */
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        setUserName(userData.username || "User");
-        // Verify user is a candidate
-        if (userData.role !== "candidate") {
-          window.location.href = "/#/dashboard";
-        }
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-      }
-    } else {
-      window.location.href = "/#/signin";
-    }
+    const u = localStorage.getItem("user");
+    if (!u) return (window.location.href = "/#/signin");
+    const user = JSON.parse(u);
+    if (user.role !== "candidate") window.location.href = "/#/dashboard";
+    setUserName(user.username || "User");
   }, []);
 
-  // Load dashboard stats
+  /* ================= STATS ================= */
   useEffect(() => {
     if (!token) return;
-    const fetchStats = async () => {
-      setStatsLoading(false);
-      setError("");
+    const load = async () => {
       try {
+        setLoadingStats(true);
         const res = await axios.get(
-          `${window.API_BASE_URL}/api/candidate/dashboard/stats/`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          `${API_BASE_URL}/api/candidate/dashboard/stats/`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         setApplicationsCount(res.data.applications_count || 0);
         setActiveJobsCount(res.data.active_jobs_count || 0);
-      } catch (err) {
-        console.error("Error fetching stats:", err);
+      } catch {
         setError("Failed to load dashboard stats");
       } finally {
-        setStatsLoading(false);
+        setLoadingStats(false);
       }
     };
-    fetchStats();
+    load();
   }, [token]);
 
-  // Load applications
+  /* ================= APPLICATIONS ================= */
   useEffect(() => {
     if (!token) return;
-    const fetchApplications = async () => {
-      setApplicationsLoading(true);
-      setError("");
+    const load = async () => {
       try {
+        setLoadingApps(true);
         const res = await axios.get(
-          `${window.API_BASE_URL}/api/candidate/applications/`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
+          `${API_BASE_URL}/api/candidate/applications/`,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         setApplications(res.data || []);
-      } catch (err) {
-        console.error("Error fetching applications:", err);
+      } catch {
         setError("Failed to load applications");
       } finally {
-        setApplicationsLoading(false);
+        setLoadingApps(false);
       }
     };
-    fetchApplications();
+    load();
   }, [token]);
 
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem("theme", newDarkMode ? "dark" : "light");
-    if (newDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    window.location.href = "/#/signin";
-  };
-
-  const handleWithdrawApplication = async (applicationId) => {
-    if (
-      !window.confirm("Are you sure you want to withdraw this application?")
-    ) {
-      return;
-    }
+  const withdraw = async (id) => {
+    if (!window.confirm("Withdraw this application?")) return;
     try {
       await axios.delete(
-        `${window.API_BASE_URL}/api/candidate/applications/${applicationId}/withdraw/`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        `${API_BASE_URL}/api/candidate/applications/${id}/withdraw/`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setSuccess("Application withdrawn successfully");
-      // Reload applications
-      const res = await axios.get(
-        `${window.API_BASE_URL}/api/candidate/applications/`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setApplications(res.data || []);
-      setApplicationsCount((res.data || []).length);
+      setApplications((prev) => prev.filter((a) => a.id !== id));
+      setApplicationsCount((c) => c - 1);
       setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      console.error("Error withdrawing application:", err);
+    } catch {
       setError("Failed to withdraw application");
     }
   };
 
+  const greeting = () => {
+    const h = new Date().getHours();
+    return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  };
+
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
-        darkMode
-          ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
-          : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
-      }`}
+      className="min-h-screen"
+      style={{
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0.12)), url(${dashImg})`,
+        backgroundAttachment: "fixed",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
-      {/* Header */}
-      <header
-        className={`sticky top-0 z-40 backdrop-blur-lg border-b transition-all duration-300 ${
-          darkMode
-            ? "bg-slate-800/80 border-slate-700/50"
-            : "bg-white/80 border-blue-100/50"
-        }`}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <a href="/#" className="flex items-center gap-3 group">
-              <div
-                className={`p-2 rounded-lg transition-all duration-300 group-hover:scale-110 ${
-                  darkMode
-                    ? "bg-indigo-600/20 text-indigo-400"
-                    : "bg-blue-100 text-blue-600"
-                }`}
-              >
-                <Briefcase size={24} />
-              </div>
-              <span
-                className={`text-xl font-bold hidden sm:inline transition-colors duration-300 ${
-                  darkMode ? "text-white" : "text-slate-900"
-                }`}
-              >
-                RemoteHire.io
-              </span>
-            </a>
+      <CandidateNav userName={userName} currentPage="dashboard" />
 
-            {/* Right Actions */}
-            <div className="flex items-center gap-2 sm:gap-4">
-              {/* Dark Mode Toggle */}
-              <button
-                onClick={toggleDarkMode}
-                className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                  darkMode
-                    ? "bg-slate-700 hover:bg-slate-600 text-yellow-400"
-                    : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-                }`}
-              >
-                {darkMode ? "☀️" : "🌙"}
-              </button>
-
-              {/* Profile Link */}
-              <a
-                href="/#/profile"
-                className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105 ${
-                  darkMode
-                    ? "text-indigo-400 hover:bg-slate-700"
-                    : "text-blue-600 hover:bg-blue-100"
-                }`}
-              >
-                <User size={18} />
-                Profile
-              </a>
-
-              {/* Interviews Link */}
-              <a
-                href="/#/candidate-interviews"
-                className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105 ${
-                  darkMode
-                    ? "text-indigo-400 hover:bg-slate-700"
-                    : "text-blue-600 hover:bg-blue-100"
-                }`}
-              >
-                <Calendar size={18} />
-                Interviews
-              </a>
-
-              {/* User Name */}
-              <span
-                className={`text-sm font-semibold hidden sm:inline ${
-                  darkMode ? "text-slate-300" : "text-slate-600"
-                }`}
-              >
-                {userName}
-              </span>
-
-              {/* Logout Button */}
-              <button
-                onClick={handleLogout}
-                className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                  darkMode
-                    ? "bg-red-600/20 text-red-400 hover:bg-red-600/30"
-                    : "bg-red-100 text-red-600 hover:bg-red-200"
-                }`}
-              >
-                <LogOut size={18} />
-              </button>
-            </div>
+      <main className="max-w-5xl mx-auto px-6 py-12">
+        {/* ================= HEADER ================= */}
+        <header className="mb-10">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm text-[#6E4B2C]/70">
+              {new Date().toDateString()}
+            </span>
           </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Page Title */}
-        <div className="mb-12">
-          <h1
-            className={`text-4xl sm:text-5xl font-bold mb-2 transition-colors duration-300 ${
-              darkMode ? "text-white" : "text-slate-900"
-            }`}
-          >
-            Dashboard
+          <h1 className="text-4xl font-bold text-[#6E4B2C]">
+            {greeting()},{" "}
+            <span style={{ color: theme.cinnamon }}>{userName}</span>
           </h1>
-          <p
-            className={`text-lg transition-colors duration-300 ${
-              darkMode ? "text-slate-400" : "text-slate-600"
-            }`}
-          >
-            Welcome back, {userName}! 👋
+          <p className="mt-2 text-[#6E4B2C]/70">
+            Track your applications and job progress
           </p>
+        </header>
+
+        {/* ================= ALERTS ================= */}
+        {error && <Alert color="#dc2626">{error}</Alert>}
+        {success && <Alert color="#16a34a">{success}</Alert>}
+
+        {/* ================= STATS ================= */}
+        <div className="grid sm:grid-cols-2 gap-6 mb-10">
+          <StatCard
+            label="Applications Sent"
+            value={applicationsCount}
+            loading={loadingStats}
+            accent={theme.cinnamon}
+          />
+          <StatCard
+            label="Open Positions"
+            value={activeJobsCount}
+            loading={loadingStats}
+            accent={theme.sage}
+          />
         </div>
 
-        {/* Messages */}
-        {error && (
-          <div
-            className={`mb-6 p-4 rounded-2xl border flex items-start gap-3 animate-slideDown ${
-              darkMode
-                ? "bg-red-500/10 border-red-500/30 text-red-300"
-                : "bg-red-50/80 border-red-200 text-red-700"
-            }`}
-          >
-            <span className="text-xl mt-0.5">⚠️</span>
-            <p className="font-medium">{error}</p>
+        {/* ================= APPLICATIONS ================= */}
+        <div className="rounded-3xl overflow-hidden bg-white/80 border border-[#E3D7C7]">
+          <div className="px-6 py-4 flex justify-between items-center bg-[#EFE7DA]">
+            <h2 className="text-xl font-bold text-[#6E4B2C]">
+              My Applications
+            </h2>
+            <span className="text-sm text-[#6E4B2C]/70">
+              {applications.length} total
+            </span>
           </div>
-        )}
-        {success && (
-          <div
-            className={`mb-6 p-4 rounded-2xl border flex items-start gap-3 animate-slideDown ${
-              darkMode
-                ? "bg-green-500/10 border-green-500/30 text-green-300"
-                : "bg-green-50/80 border-green-200 text-green-700"
-            }`}
-          >
-            <span className="text-xl mt-0.5">✅</span>
-            <p className="font-medium">{success}</p>
-          </div>
-        )}
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-          {/* Applications Count */}
-          <div
-            className={`rounded-3xl border backdrop-blur transition-all duration-300 overflow-hidden group hover:scale-105 cursor-pointer ${
-              darkMode
-                ? "bg-blue-600/10 border-blue-500/30 hover:border-blue-500/50 shadow-xl shadow-blue-500/10"
-                : "bg-blue-50/60 border-blue-100/50 hover:border-blue-200/80 shadow-lg shadow-blue-500/5"
-            }`}
-          >
-            <div className="p-8">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p
-                    className={`text-sm font-semibold uppercase tracking-wide mb-2 ${
-                      darkMode ? "text-blue-300" : "text-blue-600"
-                    }`}
-                  >
-                    Applications Sent
-                  </p>
-                  {statsLoading ? (
-                    <div
-                      className={`h-12 w-20 rounded-lg animate-pulse ${
-                        darkMode ? "bg-slate-700/30" : "bg-slate-200/30"
-                      }`}
-                    ></div>
-                  ) : (
-                    <p
-                      className={`text-5xl font-bold transition-all duration-300 group-hover:text-6xl ${
-                        darkMode ? "text-blue-300" : "text-blue-700"
-                      }`}
-                    >
-                      {applicationsCount}
+          {loadingApps ? (
+            <Loader />
+          ) : applications.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <div className="divide-y">
+              {applications.map((app) => (
+                <div
+                  key={app.id}
+                  className="p-6 flex justify-between gap-4 hover:bg-[#FAF6EF] transition"
+                >
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg text-[#6E4B2C]">
+                      {app.job_title}
+                    </h3>
+                    <p className="text-sm text-[#6E4B2C]/70 line-clamp-1">
+                      {app.job_description}
                     </p>
-                  )}
-                </div>
-                <div
-                  className={`p-4 rounded-2xl transition-all duration-300 group-hover:scale-110 ${
-                    darkMode
-                      ? "bg-blue-600/30 text-blue-300"
-                      : "bg-blue-100 text-blue-600"
-                  }`}
-                >
-                  <CheckCircle2 size={32} />
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Active Jobs Count */}
-          <div
-            className={`rounded-3xl border backdrop-blur transition-all duration-300 overflow-hidden group hover:scale-105 cursor-pointer ${
-              darkMode
-                ? "bg-green-600/10 border-green-500/30 hover:border-green-500/50 shadow-xl shadow-green-500/10"
-                : "bg-green-50/60 border-green-100/50 hover:border-green-200/80 shadow-lg shadow-green-500/5"
-            }`}
-          >
-            <div className="p-8">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p
-                    className={`text-sm font-semibold uppercase tracking-wide mb-2 ${
-                      darkMode ? "text-green-300" : "text-green-600"
-                    }`}
-                  >
-                    Active Job Openings
-                  </p>
-                  {statsLoading ? (
-                    <div
-                      className={`h-12 w-20 rounded-lg animate-pulse ${
-                        darkMode ? "bg-slate-700/30" : "bg-slate-200/30"
-                      }`}
-                    ></div>
-                  ) : (
-                    <p
-                      className={`text-5xl font-bold transition-all duration-300 group-hover:text-6xl ${
-                        darkMode ? "text-green-300" : "text-green-700"
-                      }`}
-                    >
-                      {activeJobsCount}
-                    </p>
-                  )}
-                </div>
-                <div
-                  className={`p-4 rounded-2xl transition-all duration-300 group-hover:scale-110 ${
-                    darkMode
-                      ? "bg-green-600/30 text-green-300"
-                      : "bg-green-100 text-green-600"
-                  }`}
-                >
-                  <Briefcase size={32} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Applications Section */}
-        <div
-          className={`rounded-3xl border backdrop-blur transition-all duration-300 overflow-hidden ${
-            darkMode
-              ? "bg-slate-800/40 border-slate-700/50 shadow-xl shadow-black/20"
-              : "bg-white/60 border-blue-100/50 shadow-lg shadow-blue-500/5"
-          }`}
-        >
-          {/* Section Header */}
-          <div
-            className={`px-8 py-6 border-b transition-all duration-300 ${
-              darkMode
-                ? "bg-indigo-600/10 border-slate-700/50"
-                : "bg-blue-600/5 border-blue-100/50"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`p-3 rounded-xl ${
-                  darkMode
-                    ? "bg-indigo-600/30 text-indigo-400"
-                    : "bg-blue-100 text-blue-600"
-                }`}
-              >
-                <TrendingUp size={24} />
-              </div>
-              <div>
-                <h2
-                  className={`text-2xl font-bold ${
-                    darkMode ? "text-white" : "text-slate-900"
-                  }`}
-                >
-                  My Applications
-                </h2>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-slate-400" : "text-slate-600"
-                  }`}
-                >
-                  Track your job applications and their status
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-8">
-            {applicationsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div
-                  className={`animate-spin rounded-full h-12 w-12 border-4 border-transparent ${
-                    darkMode ? "border-t-indigo-500" : "border-t-blue-600"
-                  }`}
-                ></div>
-              </div>
-            ) : applications.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-6xl mb-4">🔍</div>
-                <p
-                  className={`text-lg font-semibold mb-2 ${
-                    darkMode ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
-                  No applications yet
-                </p>
-                <p
-                  className={`text-sm mb-6 ${
-                    darkMode ? "text-slate-400" : "text-slate-600"
-                  }`}
-                >
-                  Start exploring job opportunities to apply
-                </p>
-                <a
-                  href="/#/find-jobs"
-                  className={`inline-block px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-                    darkMode
-                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
-                      : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 border border-blue-300/50"
-                  }`}
-                >
-                  🚀 Browse Jobs
-                </a>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {applications.map((app, index) => (
-                  <div
-                    key={app.id}
-                    className={`p-6 rounded-2xl border transition-all duration-300 transform hover:scale-102 hover:shadow-lg animate-fadeInUp ${
-                      darkMode
-                        ? "bg-slate-700/30 border-slate-600/50 hover:border-slate-600/80 hover:shadow-slate-900/50"
-                        : "bg-white/50 border-blue-100/50 hover:border-blue-200/80 hover:shadow-blue-500/5"
-                    }`}
-                    style={{
-                      animation: `fadeInUp 0.5s ease-out ${
-                        index * 50
-                      }ms forwards`,
-                      opacity: 0,
-                    }}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        {/* Job Title */}
-                        <h3
-                          className={`text-xl font-bold mb-2 truncate transition-colors duration-300 ${
-                            darkMode
-                              ? "text-white hover:text-indigo-300"
-                              : "text-slate-900 hover:text-blue-600"
-                          }`}
-                        >
-                          {app.job_title}
-                        </h3>
-
-                        {/* Job Description */}
-                        <p
-                          className={`text-sm mb-3 line-clamp-2 ${
-                            darkMode ? "text-slate-400" : "text-slate-600"
-                          }`}
-                        >
-                          {app.job_description}
-                        </p>
-
-                        {/* Meta Info */}
-                        <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                          {/* Status Badge */}
-                          <span
-                            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all duration-300 ${
-                              app.job_status === "active"
-                                ? darkMode
-                                  ? "bg-green-600/30 text-green-300 border border-green-500/30"
-                                  : "bg-green-100 text-green-800 border border-green-200"
-                                : darkMode
-                                ? "bg-slate-600/30 text-slate-300 border border-slate-500/30"
-                                : "bg-slate-200 text-slate-700 border border-slate-300"
-                            }`}
-                          >
-                            {app.job_status === "active" ? "🟢" : "⭕"}{" "}
-                            {app.job_status}
-                          </span>
-
-                          {/* Recruiter */}
-                          <span
-                            className={`text-xs font-medium flex items-center gap-1 ${
-                              darkMode ? "text-slate-400" : "text-slate-600"
-                            }`}
-                          >
-                            👤 {app.recruiter}
-                          </span>
-
-                          {/* Applied Date */}
-                          <span
-                            className={`text-xs font-medium flex items-center gap-1 ${
-                              darkMode ? "text-slate-400" : "text-slate-600"
-                            }`}
-                          >
-                            <Calendar size={14} />
-                            {new Date(app.applied_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Withdraw Button */}
-                      <button
-                        onClick={() => handleWithdrawApplication(app.id)}
-                        className={`flex-shrink-0 p-3 rounded-xl transition-all duration-300 hover:scale-110 ${
-                          darkMode
-                            ? "hover:bg-red-600/30 text-red-400 hover:text-red-300"
-                            : "hover:bg-red-100 text-red-600 hover:text-red-700"
-                        }`}
-                        title="Withdraw application"
-                      >
-                        <Trash2 size={20} />
-                      </button>
+                    <div className="flex gap-4 mt-2 text-sm text-[#6E4B2C]/60">
+                      <span className="flex items-center gap-1">
+                        {app.recruiter}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        {new Date(app.applied_at).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+
+                  <button
+                    onClick={() => withdraw(app.id)}
+                    className="p-3 rounded-xl text-red-600 bg-red-100 hover:scale-110 transition"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Navigation Links */}
-        <div className="mt-12 flex justify-center gap-4">
-          <a
-            href="/#/find-jobs"
-            className={`px-8 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-              darkMode
-                ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
-                : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 border border-blue-300/50"
-            }`}
-          >
-            🚀 Browse Jobs
-          </a>
-          <a
-            href="/#/profile"
-            className={`px-8 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-              darkMode
-                ? "bg-slate-700 text-slate-200 hover:bg-slate-600 border border-slate-600/50"
-                : "bg-slate-200 text-slate-900 hover:bg-slate-300 border border-slate-300"
-            }`}
-          >
-            👤 My Profile
-          </a>
+        {/* ================= FOOTER TIP ================= */}
+        <div className="mt-8 p-4 rounded-xl text-center bg-[#EFE7DA]">
+          <p className="text-sm text-[#6E4B2C]/70">
+            💡 Keep your profile updated to increase your hiring chances
+          </p>
         </div>
       </main>
-
-      <style>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-slideDown {
-          animation: slideDown 0.3s ease-out forwards;
-        }
-
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fadeInUp {
-          animation: fadeInUp 0.5s ease-out forwards;
-        }
-
-        .scale-102 {
-          transform: scale(1.02);
-        }
-      `}</style>
     </div>
   );
-};
+}
 
-export default CandidateDashboardPage;
+/* ================= HELPERS ================= */
+
+const Alert = ({ children, color }) => (
+  <div
+    className="mb-6 p-4 rounded-xl flex items-center gap-2 font-semibold"
+    style={{ background: `${color}15`, color }}
+  >
+    <span style={{ fontSize: 14 }}>✅</span>
+    {children}
+  </div>
+);
+
+const StatCard = ({ label, value, loading, icon: Icon, accent }) => (
+  <div className="p-6 rounded-3xl bg-white/80 border border-[#E3D7C7] hover:shadow-lg transition">
+    <div className="flex justify-between">
+      <div>
+        <p className="text-sm font-semibold mb-2" style={{ color: accent }}>
+          {label}
+        </p>
+        {loading ? (
+          <div className="h-10 w-16 rounded bg-[#EFE7DA]" />
+        ) : (
+          <p className="text-4xl font-bold text-[#6E4B2C]">{value}</p>
+        )}
+      </div>
+      <div
+        className="p-4 rounded-2xl flex items-center justify-center"
+        style={{ background: accent, color: "#fff" }}
+      >
+        {label && label.includes("Applications") ? (
+          <EmailIcon style={{ fontSize: 26, color: "#fff" }} />
+        ) : (
+          <WorkIcon style={{ fontSize: 26, color: "#fff" }} />
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+const Loader = () => (
+  <div className="py-16 flex justify-center">
+    <div
+      className="w-10 h-10 border-4 border-t-transparent rounded-full animate-spin"
+      style={{ borderColor: theme.cinnamon }}
+    />
+  </div>
+);
+
+const EmptyState = () => (
+  <div className="text-center py-16">
+    <p className="font-semibold text-[#6E4B2C] mb-2">No applications yet</p>
+    <a
+      href="/#/find-jobs"
+      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold"
+      style={{ background: theme.cinnamon, color: theme.cream }}
+    >
+      Browse Jobs
+    </a>
+  </div>
+);

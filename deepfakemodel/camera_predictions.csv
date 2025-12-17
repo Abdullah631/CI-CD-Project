@@ -1,0 +1,17 @@
+filepath,pred,confidence
+camera_snapshots\shot_000_REAL_0.745.jpg,REAL,0.7445285320281982
+camera_snapshots\shot_001_REAL_0.849.jpg,REAL,0.8485643267631531
+camera_snapshots\shot_002_REAL_0.752.jpg,REAL,0.751503586769104
+camera_snapshots\shot_003_REAL_0.895.jpg,REAL,0.8945797085762024
+camera_snapshots\shot_004_REAL_0.811.jpg,REAL,0.8111596703529358
+camera_snapshots\shot_005_REAL_0.769.jpg,REAL,0.7686448693275452
+camera_snapshots\shot_006_REAL_0.842.jpg,REAL,0.8424930572509766
+camera_snapshots\shot_007_REAL_0.864.jpg,REAL,0.8644380569458008
+camera_snapshots\shot_008_REAL_0.767.jpg,REAL,0.7669798135757446
+camera_snapshots\shot_009_REAL_0.777.jpg,REAL,0.7772101759910583
+camera_snapshots\shot_010_REAL_0.812.jpg,REAL,0.8121864199638367
+camera_snapshots\shot_011_REAL_0.856.jpg,REAL,0.8560829758644104
+camera_snapshots\shot_012_REAL_0.824.jpg,REAL,0.8235531449317932
+camera_snapshots\shot_013_REAL_0.801.jpg,REAL,0.8007673621177673
+camera_snapshots\shot_014_REAL_0.596.jpg,REAL,0.5961455702781677
+camera_snapshots\shot_015_FAKE_0.706.jpg,FAKE,0.7062387466430664

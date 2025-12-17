@@ -1,129 +1,95 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-import {
-  User,
-  Mail,
-  Phone,
-  FileText,
-  Briefcase,
-  Code,
-  Award,
-  BookOpen,
-  Calendar,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
+import PersonIcon from "@mui/icons-material/Person";
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
+import DescriptionIcon from "@mui/icons-material/Description";
+import WorkIcon from "@mui/icons-material/Work";
+import CodeIcon from "@mui/icons-material/Code";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import CandidateNav from "../components/CandidateNav";
+import dashImg from "../assets/dash.jpg";
+import { API_BASE_URL } from "../config";
 
-export const ProfilePage = () => {
-  const [profile, setProfile] = useState({
-    full_name: "",
-    phone_number: "",
-    email: "",
-    username: "",
-    photo: null,
-    cv: null,
-    cv_metadata: {},
-    cv_last_updated: null,
-  });
-
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [editing, setEditing] = useState(false);
-  const [cvFile, setCvFile] = useState(null);
-  const [photoFile, setPhotoFile] = useState(null);
-  const [darkMode, setDarkMode] = useState(
-    localStorage.getItem("darkMode") === "true"
-  );
-
+export default function ProfilePage() {
   const token = localStorage.getItem("token");
 
+  const [userName, setUserName] = useState("");
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [cvFile, setCvFile] = useState(null);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  /* ---------------- User ---------------- */
   useEffect(() => {
-    fetchProfile();
+    const stored = localStorage.getItem("user");
+    if (stored) {
+      try {
+        setUserName(JSON.parse(stored).username || "User");
+      } catch {}
+    }
   }, []);
 
+  /* ---------------- Profile ---------------- */
   useEffect(() => {
-    localStorage.setItem("darkMode", darkMode);
-  }, [darkMode]);
-
-  const fetchProfile = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        `${window.API_BASE_URL}/api/candidate/profile/`,
-        {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const res = await axios.get(`${API_BASE_URL}/api/candidate/profile/`, {
           headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setProfile(response.data);
-      setError("");
-    } catch (err) {
-      console.error("Error fetching profile:", err);
-      setError("Failed to load profile");
-    } finally {
-      setLoading(false);
-    }
-  };
+        });
+        setProfile(res.data);
+      } catch {
+        setError("Failed to load profile");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [token]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setProfile((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handlePhotoChange = (e) => {
-    setPhotoFile(e.target.files[0]);
-  };
-
-  const handleCvChange = (e) => {
-    setCvFile(e.target.files[0]);
-  };
-
-  const handleSaveProfile = async (e) => {
+  const saveProfile = async (e) => {
     e.preventDefault();
-    setSaving(true);
     try {
-      const response = await axios.put(
-        `${window.API_BASE_URL}/api/candidate/profile/`,
+      setSaving(true);
+      const res = await axios.put(
+        `${API_BASE_URL}/api/candidate/profile/`,
         {
           full_name: profile.full_name,
           phone_number: profile.phone_number,
         },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      setProfile(response.data);
-      setSuccess("Profile updated successfully!");
+      setProfile(res.data);
       setEditing(false);
+      setSuccess("Profile updated successfully");
       setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      console.error("Error saving profile:", err);
+    } catch {
       setError("Failed to update profile");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleUploadCV = async (e) => {
+  const uploadCV = async (e) => {
     e.preventDefault();
-    if (!cvFile) {
-      setError("Please select a CV file");
-      return;
-    }
-
-    setUploading(true);
+    if (!cvFile) return;
     try {
-      const formData = new FormData();
-      formData.append("cv", cvFile);
+      setUploading(true);
+      const form = new FormData();
+      form.append("cv", cvFile);
 
-      const response = await axios.post(
-        `${window.API_BASE_URL}/api/candidate/upload-cv/`,
-        formData,
+      const res = await axios.post(
+        `${API_BASE_URL}/api/candidate/upload-cv/`,
+        form,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -132,18 +98,18 @@ export const ProfilePage = () => {
         }
       );
 
-      setProfile((prev) => ({
-        ...prev,
-        cv: response.data.cv_url,
-        cv_metadata: response.data.metadata,
+      setProfile((p) => ({
+        ...p,
+        cv: res.data.cv_url,
+        cv_metadata: res.data.metadata,
         cv_last_updated: new Date().toISOString(),
       }));
-      setSuccess("CV uploaded and processed successfully!");
+
       setCvFile(null);
+      setSuccess("CV uploaded & analyzed");
       setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      console.error("Error uploading CV:", err);
-      setError(err.response?.data?.error || "Failed to upload CV");
+    } catch {
+      setError("Failed to upload CV");
     } finally {
       setUploading(false);
     }
@@ -151,833 +117,243 @@ export const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div
-        className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
-          darkMode
-            ? "bg-gradient-to-br from-slate-900 to-slate-800"
-            : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
-        }`}
-      >
+      <div className="min-h-screen flex items-center justify-center">
         <div
-          className={`animate-spin rounded-full h-16 w-16 border-4 border-transparent ${
-            darkMode ? "border-t-indigo-500" : "border-t-blue-600"
-          }`}
-        ></div>
+          className="w-14 h-14 rounded-full animate-spin border-4 border-transparent"
+          style={{ borderTopColor: "var(--cinnamon)" }}
+        />
       </div>
     );
   }
 
+  if (!profile) return null;
+  const m = profile.cv_metadata || {};
+
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
-        darkMode
-          ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
-          : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
-      }`}
+      className="min-h-screen"
+      style={{
+        backgroundColor: "var(--bg)",
+        backgroundImage: `url(${dashImg})`,
+        backgroundAttachment: "fixed",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
-      {/* Header */}
-      <div className="sticky top-0 z-40">
-        <div
-          className={`backdrop-blur-lg border-b transition-all duration-300 ${
-            darkMode
-              ? "bg-slate-800/80 border-slate-700/50"
-              : "bg-white/80 border-blue-100/50"
-          }`}
-        >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className={`p-2 rounded-xl ${
-                  darkMode ? "bg-indigo-600/20" : "bg-blue-600/10"
-                }`}
-              >
-                <User
-                  size={24}
-                  className={darkMode ? "text-indigo-400" : "text-blue-600"}
-                />
-              </div>
-              <h1
-                className={`text-2xl font-bold ${
-                  darkMode ? "text-white" : "text-slate-900"
-                }`}
-              >
-                My Profile
-              </h1>
-            </div>
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-xl transition-all duration-300 ${
-                darkMode
-                  ? "bg-slate-700 hover:bg-slate-600"
-                  : "bg-slate-200 hover:bg-slate-300"
-              }`}
-            >
-              {darkMode ? "☀️" : "🌙"}
-            </button>
-          </div>
-        </div>
-      </div>
+      <CandidateNav userName={userName} currentPage="profile" />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Messages */}
+      <main className="max-w-5xl mx-auto px-6 py-10 space-y-8">
+        {/* Alerts */}
         {error && (
-          <div
-            className={`mb-6 p-4 rounded-2xl border flex items-start gap-3 animate-slideDown ${
-              darkMode
-                ? "bg-red-500/10 border-red-500/30 text-red-300"
-                : "bg-red-50/80 border-red-200 text-red-700"
-            }`}
-          >
-            <AlertCircle size={20} className="flex-shrink-0 mt-0.5" />
-            <p className="font-medium">{error}</p>
+          <div className="p-4 rounded-2xl border bg-red-50 text-red-600 flex gap-2">
+            <ErrorOutlineIcon style={{ fontSize: 18 }} />
+            {error}
           </div>
         )}
         {success && (
-          <div
-            className={`mb-6 p-4 rounded-2xl border flex items-start gap-3 animate-slideDown ${
-              darkMode
-                ? "bg-green-500/10 border-green-500/30 text-green-300"
-                : "bg-green-50/80 border-green-200 text-green-700"
-            }`}
-          >
-            <CheckCircle size={20} className="flex-shrink-0 mt-0.5" />
-            <p className="font-medium">{success}</p>
+          <div className="p-4 rounded-2xl border bg-green-50 text-green-600 flex gap-2">
+            <CheckCircleIcon style={{ fontSize: 18 }} />
+            {success}
           </div>
         )}
 
-        {/* Personal Information Section */}
-        <div
-          className={`rounded-3xl border backdrop-blur transition-all duration-300 overflow-hidden mb-8 ${
-            darkMode
-              ? "bg-slate-800/40 border-slate-700/50 shadow-xl shadow-black/20"
-              : "bg-white/60 border-blue-100/50 shadow-lg shadow-blue-500/5"
-          }`}
-        >
-          {/* Section Header */}
-          <div
-            className={`px-8 py-6 border-b transition-all duration-300 ${
-              darkMode
-                ? "bg-indigo-600/10 border-slate-700/50"
-                : "bg-blue-600/5 border-blue-100/50"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`p-3 rounded-xl ${
-                    darkMode ? "bg-indigo-600/30" : "bg-blue-100"
-                  }`}
-                >
-                  <User
-                    size={20}
-                    className={darkMode ? "text-indigo-400" : "text-blue-600"}
-                  />
-                </div>
-                <div>
-                  <h2
-                    className={`text-2xl font-bold ${
-                      darkMode ? "text-white" : "text-slate-900"
-                    }`}
-                  >
-                    Personal Information
-                  </h2>
-                  <p
-                    className={`text-sm ${
-                      darkMode ? "text-slate-400" : "text-slate-600"
-                    }`}
-                  >
-                    Update your profile details
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setEditing(!editing)}
-                className={`px-6 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-                  editing
-                    ? darkMode
-                      ? "bg-red-600/20 text-red-300 border border-red-500/30 hover:bg-red-600/30"
-                      : "bg-red-100 text-red-700 border border-red-200 hover:bg-red-200"
-                    : darkMode
-                    ? "bg-indigo-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
-                    : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 border border-blue-300/50"
-                }`}
-              >
-                {editing ? "✕ Cancel" : "✎ Edit Profile"}
-              </button>
-            </div>
+        {/* ---------------- Personal Info ---------------- */}
+        <div className="clay-card">
+          <div className="px-6 py-5 border-b bg-[rgba(165,185,163,0.15)]">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <PersonIcon style={{ fontSize: 20 }} />
+              Personal Information
+            </h2>
           </div>
 
-          {/* Form Content */}
-          <div className="p-8">
-            <form onSubmit={handleSaveProfile}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {/* Full Name */}
-                <div>
-                  <label
-                    className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
-                      darkMode ? "text-slate-300" : "text-slate-700"
-                    }`}
-                  >
-                    <User size={16} />
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    name="full_name"
-                    value={profile.full_name}
-                    onChange={handleInputChange}
-                    disabled={!editing}
-                    placeholder="Enter your full name"
-                    className={`w-full px-4 py-3 rounded-xl transition-all duration-300 border font-medium ${
-                      darkMode
-                        ? `bg-slate-700/30 border-slate-600/50 text-white placeholder-slate-500 ${
-                            editing
-                              ? "focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
-                              : "opacity-60 cursor-not-allowed"
-                          }`
-                        : `bg-white border-blue-100 text-slate-900 placeholder-slate-400 ${
-                            editing
-                              ? "focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                              : "opacity-60 cursor-not-allowed"
-                          }`
-                    }`}
-                  />
-                </div>
+          <form
+            onSubmit={saveProfile}
+            className="p-6 grid md:grid-cols-2 gap-6"
+          >
+            <input
+              disabled={!editing}
+              value={profile.full_name || ""}
+              onChange={(e) =>
+                setProfile({ ...profile, full_name: e.target.value })
+              }
+              placeholder="Full name"
+              className="input"
+            />
+            <input
+              disabled={!editing}
+              value={profile.phone_number || ""}
+              onChange={(e) =>
+                setProfile({ ...profile, phone_number: e.target.value })
+              }
+              placeholder="Phone number"
+              className="input"
+            />
+            <input
+              disabled
+              value={profile.email}
+              className="input opacity-60"
+            />
+            <input
+              disabled
+              value={profile.username}
+              className="input opacity-60"
+            />
 
-                {/* Phone Number */}
-                <div>
-                  <label
-                    className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
-                      darkMode ? "text-slate-300" : "text-slate-700"
-                    }`}
-                  >
-                    <Phone size={16} />
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone_number"
-                    value={profile.phone_number}
-                    onChange={handleInputChange}
-                    disabled={!editing}
-                    placeholder="+1 (555) 000-0000"
-                    className={`w-full px-4 py-3 rounded-xl transition-all duration-300 border font-medium ${
-                      darkMode
-                        ? `bg-slate-700/30 border-slate-600/50 text-white placeholder-slate-500 ${
-                            editing
-                              ? "focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
-                              : "opacity-60 cursor-not-allowed"
-                          }`
-                        : `bg-white border-blue-100 text-slate-900 placeholder-slate-400 ${
-                            editing
-                              ? "focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                              : "opacity-60 cursor-not-allowed"
-                          }`
-                    }`}
-                  />
-                </div>
-
-                {/* Email (Read-only) */}
-                <div>
-                  <label
-                    className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
-                      darkMode ? "text-slate-300" : "text-slate-700"
-                    }`}
-                  >
-                    <Mail size={16} />
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={profile.email}
-                    disabled
-                    className={`w-full px-4 py-3 rounded-xl border transition-all duration-300 font-medium opacity-60 cursor-not-allowed ${
-                      darkMode
-                        ? "bg-slate-700/20 border-slate-600/30 text-slate-400"
-                        : "bg-slate-100 border-slate-200 text-slate-600"
-                    }`}
-                  />
-                </div>
-
-                {/* Username (Read-only) */}
-                <div>
-                  <label
-                    className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
-                      darkMode ? "text-slate-300" : "text-slate-700"
-                    }`}
-                  >
-                    <User size={16} />
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    value={profile.username}
-                    disabled
-                    className={`w-full px-4 py-3 rounded-xl border transition-all duration-300 font-medium opacity-60 cursor-not-allowed ${
-                      darkMode
-                        ? "bg-slate-700/20 border-slate-600/30 text-slate-400"
-                        : "bg-slate-100 border-slate-200 text-slate-600"
-                    }`}
-                  />
-                </div>
-              </div>
-
-              {/* Save Button */}
-              {editing && (
+            <div className="md:col-span-2 flex gap-3">
+              {!editing ? (
                 <button
-                  type="submit"
-                  disabled={saving}
-                  className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                    darkMode
-                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
-                      : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 border border-blue-300/50"
-                  }`}
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => setEditing(true)}
                 >
-                  {saving ? "💾 Saving..." : "✓ Save Changes"}
+                  Edit Profile
+                </button>
+              ) : (
+                <button type="submit" className="btn-primary">
+                  {saving ? "Saving..." : "Save Changes"}
                 </button>
               )}
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
 
-        {/* CV Upload Section */}
-        <div
-          className={`rounded-3xl border backdrop-blur transition-all duration-300 overflow-hidden mb-8 ${
-            darkMode
-              ? "bg-slate-800/40 border-slate-700/50 shadow-xl shadow-black/20"
-              : "bg-white/60 border-blue-100/50 shadow-lg shadow-blue-500/5"
-          }`}
-        >
-          {/* Section Header */}
-          <div
-            className={`px-8 py-6 border-b transition-all duration-300 ${
-              darkMode
-                ? "bg-purple-600/10 border-slate-700/50"
-                : "bg-purple-600/5 border-blue-100/50"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`p-3 rounded-xl ${
-                  darkMode ? "bg-purple-600/30" : "bg-purple-100"
-                }`}
-              >
-                <FileText
-                  size={20}
-                  className={darkMode ? "text-purple-400" : "text-purple-600"}
-                />
-              </div>
-              <div>
-                <h2
-                  className={`text-2xl font-bold ${
-                    darkMode ? "text-white" : "text-slate-900"
-                  }`}
-                >
-                  CV Management
-                </h2>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-slate-400" : "text-slate-600"
-                  }`}
-                >
-                  Upload and manage your CV
-                </p>
-              </div>
-            </div>
+        {/* ---------------- CV Upload ---------------- */}
+        <div className="clay-card">
+          <div className="px-6 py-5 border-b bg-[rgba(178,114,77,0.12)]">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <DescriptionIcon style={{ fontSize: 20 }} />
+              CV Management
+            </h2>
           </div>
 
-          {/* Content */}
-          <div className="p-8 space-y-6">
-            {/* Current CV Status */}
-            {profile.cv ? (
-              <div
-                className={`p-6 rounded-2xl border transition-all duration-300 ${
-                  darkMode
-                    ? "bg-green-500/10 border-green-500/30"
-                    : "bg-green-50/80 border-green-200"
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <CheckCircle
-                    size={24}
-                    className={darkMode ? "text-green-400" : "text-green-600"}
-                  />
-                  <div>
-                    <p
-                      className={`font-bold mb-2 ${
-                        darkMode ? "text-green-300" : "text-green-700"
-                      }`}
-                    >
-                      CV uploaded and processed
-                    </p>
-                    <a
-                      href={profile.cv}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`inline-block mb-3 font-semibold hover:underline ${
-                        darkMode ? "text-indigo-400" : "text-blue-600"
-                      }`}
-                    >
-                      📄 View your CV
-                    </a>
-                    {profile.cv_last_updated && (
-                      <p
-                        className={`text-sm ${
-                          darkMode ? "text-slate-400" : "text-slate-600"
-                        }`}
-                      >
-                        Last updated:{" "}
-                        {new Date(profile.cv_last_updated).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            {/* CV Upload Form */}
-            <form onSubmit={handleUploadCV}>
-              <div className="mb-4">
-                <label
-                  className={`block text-sm font-semibold mb-3 flex items-center gap-2 ${
-                    darkMode ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
-                  <FileText size={16} />
-                  Upload CV (PDF, DOC, DOCX, TXT)
-                </label>
-                <div
-                  className={`relative px-6 py-6 rounded-2xl border-2 border-dashed transition-all duration-300 text-center cursor-pointer hover:border-opacity-100 ${
-                    darkMode
-                      ? "border-slate-600/50 hover:bg-slate-700/20"
-                      : "border-blue-200 hover:bg-blue-50/50"
-                  }`}
-                >
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.txt"
-                    onChange={handleCvChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <div className="pointer-events-none">
-                    <div
-                      className={`text-3xl mb-2 ${
-                        cvFile ? "text-blue-600" : "text-slate-400"
-                      }`}
-                    >
-                      📁
-                    </div>
-                    <p
-                      className={`font-semibold ${
-                        darkMode ? "text-slate-300" : "text-slate-700"
-                      }`}
-                    >
-                      {cvFile
-                        ? cvFile.name
-                        : "Click to upload or drag and drop"}
-                    </p>
-                    <p
-                      className={`text-sm mt-1 ${
-                        darkMode ? "text-slate-500" : "text-slate-500"
-                      }`}
-                    >
-                      PDF, DOC, DOCX, or TXT
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={!cvFile || uploading}
-                className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
-                  darkMode
-                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-purple-500/50 border border-purple-500/50"
-                    : "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:shadow-lg hover:shadow-purple-500/30 border border-purple-300/50"
-                }`}
-              >
-                {uploading ? "⏳ Processing..." : "🚀 Upload and Process CV"}
-              </button>
-            </form>
-          </div>
+          <form onSubmit={uploadCV} className="p-6 space-y-4">
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,.txt"
+              onChange={(e) => setCvFile(e.target.files[0])}
+            />
+            <button disabled={!cvFile || uploading} className="btn-primary">
+              {uploading ? "Processing..." : "Upload CV"}
+            </button>
+          </form>
         </div>
 
-        {/* CV Metadata Section */}
-        {profile.cv_metadata && Object.keys(profile.cv_metadata).length > 0 && (
-          <div
-            className={`rounded-3xl border backdrop-blur transition-all duration-300 overflow-hidden ${
-              darkMode
-                ? "bg-slate-800/40 border-slate-700/50 shadow-xl shadow-black/20"
-                : "bg-white/60 border-blue-100/50 shadow-lg shadow-blue-500/5"
-            }`}
-          >
-            {/* Section Header */}
-            <div
-              className={`px-8 py-6 border-b transition-all duration-300 ${
-                darkMode
-                  ? "bg-orange-600/10 border-slate-700/50"
-                  : "bg-orange-600/5 border-blue-100/50"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`p-3 rounded-xl ${
-                    darkMode ? "bg-orange-600/30" : "bg-orange-100"
-                  }`}
-                >
-                  <BookOpen
-                    size={20}
-                    className={darkMode ? "text-orange-400" : "text-orange-600"}
-                  />
-                </div>
-                <div>
-                  <h2
-                    className={`text-2xl font-bold ${
-                      darkMode ? "text-white" : "text-slate-900"
-                    }`}
-                  >
-                    Extracted CV Information
-                  </h2>
-                  <p
-                    className={`text-sm ${
-                      darkMode ? "text-slate-400" : "text-slate-600"
-                    }`}
-                  >
-                    Your CV has been analyzed by our AI
-                  </p>
-                </div>
-              </div>
+        {/* ---------------- Extracted CV Info ---------------- */}
+        {Object.keys(m).length > 0 && (
+          <div className="clay-card">
+            <div className="px-6 py-5 border-b bg-[rgba(165,185,163,0.15)]">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <MenuBookIcon style={{ fontSize: 20 }} />
+                Extracted CV Information
+              </h2>
             </div>
 
-            {/* Metadata Content */}
-            <div className="p-8 space-y-8">
-              {/* Basic Info */}
-              <div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {profile.cv_metadata.full_name && (
-                    <div
-                      className={`p-4 rounded-xl transition-all duration-300 ${
-                        darkMode
-                          ? "bg-slate-700/30 border border-slate-600/50"
-                          : "bg-blue-50/50 border border-blue-100/50"
-                      }`}
-                    >
-                      <p
-                        className={`text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-2 ${
-                          darkMode ? "text-slate-400" : "text-slate-600"
-                        }`}
-                      >
-                        <User size={14} />
-                        Full Name
-                      </p>
-                      <p
-                        className={`text-lg font-bold ${
-                          darkMode ? "text-white" : "text-slate-900"
-                        }`}
-                      >
-                        {profile.cv_metadata.full_name}
-                      </p>
-                    </div>
-                  )}
-
-                  {profile.cv_metadata.current_title && (
-                    <div
-                      className={`p-4 rounded-xl transition-all duration-300 ${
-                        darkMode
-                          ? "bg-slate-700/30 border border-slate-600/50"
-                          : "bg-blue-50/50 border border-blue-100/50"
-                      }`}
-                    >
-                      <p
-                        className={`text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-2 ${
-                          darkMode ? "text-slate-400" : "text-slate-600"
-                        }`}
-                      >
-                        <Briefcase size={14} />
-                        Current Title
-                      </p>
-                      <p
-                        className={`text-lg font-bold ${
-                          darkMode ? "text-white" : "text-slate-900"
-                        }`}
-                      >
-                        {profile.cv_metadata.current_title}
-                      </p>
-                    </div>
-                  )}
-
-                  {profile.cv_metadata.years_of_experience && (
-                    <div
-                      className={`p-4 rounded-xl transition-all duration-300 ${
-                        darkMode
-                          ? "bg-slate-700/30 border border-slate-600/50"
-                          : "bg-blue-50/50 border border-blue-100/50"
-                      }`}
-                    >
-                      <p
-                        className={`text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-2 ${
-                          darkMode ? "text-slate-400" : "text-slate-600"
-                        }`}
-                      >
-                        <Calendar size={14} />
-                        Experience
-                      </p>
-                      <p
-                        className={`text-lg font-bold ${
-                          darkMode ? "text-white" : "text-slate-900"
-                        }`}
-                      >
-                        {profile.cv_metadata.years_of_experience}+ years
-                      </p>
-                    </div>
-                  )}
-                </div>
+            <div className="p-6 space-y-8">
+              {/* Summary cards */}
+              <div className="grid sm:grid-cols-2 gap-6">
+                {m.current_title && (
+                  <div className="p-4 rounded-xl border bg-white">
+                    <p className="text-xs uppercase mb-2 flex gap-2">
+                      <WorkIcon style={{ fontSize: 14 }} /> Current Role
+                    </p>
+                    <p className="text-lg font-bold">{m.current_title}</p>
+                  </div>
+                )}
+                {m.years_of_experience !== undefined && (
+                  <div className="p-4 rounded-xl border bg-white">
+                    <p className="text-xs uppercase mb-2 flex gap-2">
+                      <CalendarTodayIcon style={{ fontSize: 14 }} /> Experience
+                    </p>
+                    <p className="text-lg font-bold">
+                      {m.years_of_experience}+ years
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Skills */}
-              {profile.cv_metadata.skills &&
-                profile.cv_metadata.skills.length > 0 && (
-                  <div>
-                    <h3
-                      className={`text-lg font-bold mb-4 flex items-center gap-2 ${
-                        darkMode ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      <Code
-                        size={20}
-                        className={darkMode ? "text-blue-400" : "text-blue-600"}
-                      />
-                      Skills
-                    </h3>
-                    <div className="flex flex-wrap gap-3">
-                      {profile.cv_metadata.skills.map((skill, idx) => (
-                        <span
-                          key={idx}
-                          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:scale-105 ${
-                            darkMode
-                              ? "bg-blue-600/30 text-blue-300 border border-blue-500/50"
-                              : "bg-blue-100 text-blue-800 border border-blue-200"
-                          }`}
-                        >
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
+              {Array.isArray(m.skills) && (
+                <div>
+                  <h3 className="font-bold mb-3 flex items-center gap-2">
+                    <CodeIcon style={{ fontSize: 18 }} /> Skills
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {m.skills.map((s, i) => (
+                      <span
+                        key={i}
+                        className="px-4 py-2 rounded-full text-sm font-semibold border"
+                        style={{
+                          background: "rgba(178,114,77,0.15)",
+                          color: "var(--cinnamon)",
+                        }}
+                      >
+                        {s}
+                      </span>
+                    ))}
                   </div>
-                )}
-
-              {/* Programming Languages */}
-              {profile.cv_metadata.programming_languages &&
-                profile.cv_metadata.programming_languages.length > 0 && (
-                  <div>
-                    <h3
-                      className={`text-lg font-bold mb-4 flex items-center gap-2 ${
-                        darkMode ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      <Code
-                        size={20}
-                        className={
-                          darkMode ? "text-purple-400" : "text-purple-600"
-                        }
-                      />
-                      Programming Languages
-                    </h3>
-                    <div className="flex flex-wrap gap-3">
-                      {profile.cv_metadata.programming_languages.map(
-                        (lang, idx) => (
-                          <span
-                            key={idx}
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:scale-105 ${
-                              darkMode
-                                ? "bg-purple-600/30 text-purple-300 border border-purple-500/50"
-                                : "bg-purple-100 text-purple-800 border border-purple-200"
-                            }`}
-                          >
-                            {lang}
-                          </span>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
+                </div>
+              )}
 
               {/* Education */}
-              {profile.cv_metadata.education &&
-                profile.cv_metadata.education.length > 0 && (
-                  <div>
-                    <h3
-                      className={`text-lg font-bold mb-4 flex items-center gap-2 ${
-                        darkMode ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      <BookOpen
-                        size={20}
-                        className={
-                          darkMode ? "text-indigo-400" : "text-indigo-600"
-                        }
-                      />
-                      Education
-                    </h3>
-                    <div className="space-y-3">
-                      {profile.cv_metadata.education.map((edu, idx) => (
-                        <div
-                          key={idx}
-                          className={`p-5 rounded-xl border transition-all duration-300 hover:scale-102 ${
-                            darkMode
-                              ? "bg-slate-700/30 border-slate-600/50"
-                              : "bg-indigo-50/50 border-indigo-100/50"
-                          }`}
-                        >
-                          <p
-                            className={`font-bold text-lg ${
-                              darkMode ? "text-white" : "text-slate-900"
-                            }`}
-                          >
-                            {edu.degree}
-                          </p>
-                          <p
-                            className={`text-sm font-semibold ${
-                              darkMode ? "text-indigo-300" : "text-indigo-600"
-                            }`}
-                          >
-                            {edu.field}
-                          </p>
-                          <p
-                            className={`text-sm ${
-                              darkMode ? "text-slate-400" : "text-slate-600"
-                            }`}
-                          >
-                            {edu.institution}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+              {Array.isArray(m.education) && (
+                <div>
+                  <h3 className="font-bold mb-3 flex items-center gap-2">
+                    <MenuBookIcon style={{ fontSize: 18 }} /> Education
+                  </h3>
+                  <div className="space-y-3">
+                    {m.education.map((e, i) => (
+                      <div key={i} className="p-4 rounded-xl border bg-white">
+                        <p className="font-semibold">{e.degree}</p>
+                        <p className="text-sm">{e.institution}</p>
+                        {e.year && (
+                          <p className="text-xs opacity-70">{e.year}</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-              {/* Work Experience */}
-              {profile.cv_metadata.work_experience &&
-                profile.cv_metadata.work_experience.length > 0 && (
-                  <div>
-                    <h3
-                      className={`text-lg font-bold mb-4 flex items-center gap-2 ${
-                        darkMode ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      <Briefcase
-                        size={20}
-                        className={
-                          darkMode ? "text-green-400" : "text-green-600"
-                        }
-                      />
-                      Work Experience
-                    </h3>
-                    <div className="space-y-3">
-                      {profile.cv_metadata.work_experience.map((exp, idx) => (
-                        <div
-                          key={idx}
-                          className={`p-5 rounded-xl border transition-all duration-300 hover:scale-102 ${
-                            darkMode
-                              ? "bg-slate-700/30 border-slate-600/50"
-                              : "bg-green-50/50 border-green-100/50"
-                          }`}
-                        >
-                          <p
-                            className={`font-bold text-lg ${
-                              darkMode ? "text-white" : "text-slate-900"
-                            }`}
-                          >
-                            {exp.title}
-                          </p>
-                          <p
-                            className={`text-sm font-semibold ${
-                              darkMode ? "text-green-300" : "text-green-600"
-                            }`}
-                          >
-                            {exp.company}
-                          </p>
-                          {exp.years && (
-                            <p
-                              className={`text-sm ${
-                                darkMode ? "text-slate-400" : "text-slate-600"
-                              }`}
-                            >
-                              {exp.years} years
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+              {/* Experience */}
+              {Array.isArray(m.work_experience) && (
+                <div>
+                  <h3 className="font-bold mb-3 flex items-center gap-2">
+                    <WorkIcon style={{ fontSize: 18 }} /> Work Experience
+                  </h3>
+                  <div className="space-y-3">
+                    {m.work_experience.map((e, i) => (
+                      <div key={i} className="p-4 rounded-xl border bg-white">
+                        <p className="font-semibold">{e.title}</p>
+                        <p className="text-sm">{e.company}</p>
+                        {e.years && (
+                          <p className="text-xs opacity-70">{e.years} years</p>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
               {/* Certifications */}
-              {profile.cv_metadata.certifications &&
-                profile.cv_metadata.certifications.length > 0 && (
-                  <div>
-                    <h3
-                      className={`text-lg font-bold mb-4 flex items-center gap-2 ${
-                        darkMode ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      <Award
-                        size={20}
-                        className={
-                          darkMode ? "text-yellow-400" : "text-yellow-600"
-                        }
-                      />
-                      Certifications
-                    </h3>
-                    <div className="space-y-2">
-                      {profile.cv_metadata.certifications.map((cert, idx) => (
-                        <div
-                          key={idx}
-                          className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ${
-                            darkMode
-                              ? "hover:bg-slate-700/30"
-                              : "hover:bg-yellow-50/50"
-                          }`}
-                        >
-                          <span
-                            className={`inline-block w-2 h-2 rounded-full ${
-                              darkMode ? "bg-yellow-400" : "bg-yellow-600"
-                            }`}
-                          ></span>
-                          <span
-                            className={`font-medium ${
-                              darkMode ? "text-slate-300" : "text-slate-700"
-                            }`}
-                          >
-                            {cert}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              {Array.isArray(m.certifications) && (
+                <div>
+                  <h3 className="font-bold mb-3 flex items-center gap-2">
+                    <EmojiEventsIcon style={{ fontSize: 18 }} /> Certifications
+                  </h3>
+                  <ul className="space-y-2">
+                    {m.certifications.map((c, i) => (
+                      <li key={i} className="flex gap-2 items-center">
+                        <span className="w-2 h-2 rounded-full bg-[var(--cinnamon)]" />
+                        {c}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         )}
-      </div>
-
-      <style>{`
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-slideDown {
-          animation: slideDown 0.3s ease-out forwards;
-        }
-      `}</style>
+      </main>
     </div>
   );
-};
-
-export default ProfilePage;
+}

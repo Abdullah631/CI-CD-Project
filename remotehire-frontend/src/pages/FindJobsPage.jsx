@@ -1,478 +1,248 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-import JobDetailsModal from "../components/JobDetailsModal";
-import { Search, Briefcase } from "lucide-react";
+import SearchIcon from "@mui/icons-material/Search";
+import WorkIcon from "@mui/icons-material/Work";
+// small icons: search and job type
+import CandidateNav from "../components/CandidateNav";
+import dashImg from "../assets/dash.jpg";
+import JobDetailsModalNew from "../components/JobDetailsModalNew";
+import { API_BASE_URL } from "../config";
 
-export const FindJobsPage = () => {
+/* ================= THEME ================= */
+const theme = {
+  sage: "#B7C7B1",
+  cinnamon: "#B87B4B",
+  sand: "#CDB08E",
+  cream: "#FBF6E6",
+  clay: "#6E4B2C",
+};
+
+export default function FindJobsPage() {
   const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [appliedJobs, setAppliedJobs] = useState(new Set());
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [darkMode, setDarkMode] = useState(() => {
-    const stored = localStorage.getItem("theme");
-    if (stored) return stored === "dark";
-    return document.documentElement.classList.contains("dark");
-  });
-  const [appliedJobs, setAppliedJobs] = useState(new Set());
+  const [userName, setUserName] = useState("");
   const [selectedJob, setSelectedJob] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   const token = localStorage.getItem("token");
 
+  /* ================= USER ================= */
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        if (userData.role !== "candidate") {
-          window.location.href = "/#/dashboard";
-        }
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-      }
-    }
+    const u = localStorage.getItem("user");
+    if (!u) return (window.location.href = "/#/signin");
+    const user = JSON.parse(u);
+    if (user.role !== "candidate") window.location.href = "/#/dashboard";
+    setUserName(user.username || "User");
   }, []);
 
+  /* ================= FETCH JOBS ================= */
   useEffect(() => {
-    const fetchJobs = async () => {
-      setLoading(true);
-      setError("");
+    const load = async () => {
       try {
-        const res = await axios.get(`${window.API_BASE_URL}/api/jobs/`, {
+        setLoading(true);
+        const res = await axios.get(`${API_BASE_URL}/api/jobs/`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        const allJobs = res.data || [];
-        const activeJobs = allJobs.filter(
-          (job) => (job.status || "").toLowerCase() === "active"
+        const active = (res.data || []).filter(
+          (j) => (j.status || "").toLowerCase() === "active"
         );
-        setJobs(activeJobs);
+        setJobs(active);
 
         if (token) {
-          try {
-            const appsRes = await axios.get(
-              `${window.API_BASE_URL}/api/candidate/applications/`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            const appliedSet = new Set(
-              (appsRes.data || []).map((app) => app.job_id)
-            );
-            setAppliedJobs(appliedSet);
-          } catch (err) {
-            console.error("Error loading applications:", err);
-          }
-        }
-      } catch (err) {
-        console.error(err);
-        if (err.response && err.response.status === 403) {
-          setError(
-            "You do not have permission to view jobs. Please sign in as a candidate."
+          const apps = await axios.get(
+            `${API_BASE_URL}/api/candidate/applications/`,
+            { headers: { Authorization: `Bearer ${token}` } }
           );
-        } else if (err.response && err.response.status === 404) {
-          setError("Jobs API not found (404). Check backend routes.");
-        } else {
-          setError("Failed to load jobs");
+          setAppliedJobs(new Set((apps.data || []).map((a) => a.job_id)));
         }
+      } catch {
+        setError("Failed to load jobs");
       } finally {
         setLoading(false);
       }
     };
-
-    fetchJobs();
-    const updateListener = () => fetchJobs();
-    window.addEventListener("jobsUpdated", updateListener);
-    const storageHandler = (e) => {
-      if (e.key === "jobs_updated") fetchJobs();
-    };
-    window.addEventListener("storage", storageHandler);
-
-    return () => {
-      window.removeEventListener("jobsUpdated", updateListener);
-      window.removeEventListener("storage", storageHandler);
-    };
+    load();
   }, [token]);
 
-  const handleApply = async (jobId) => {
-    setError("");
-    setSuccess("");
-
-    if (!token) {
-      setError("You must be logged in to apply for jobs");
-      return;
-    }
-
+  /* ================= APPLY ================= */
+  const apply = async (id) => {
+    if (!token) return setError("Please login to apply");
     try {
-      const response = await axios.post(
-        `${window.API_BASE_URL}/api/jobs/${jobId}/apply/`,
+      await axios.post(
+        `${API_BASE_URL}/api/jobs/${id}/apply/`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      setAppliedJobs(new Set([...appliedJobs, jobId]));
-      setSuccess("Application submitted successfully!");
-      window.dispatchEvent(new Event("jobsUpdated"));
-
+      setAppliedJobs((p) => new Set([...p, id]));
+      setSuccess("Application submitted successfully");
       setTimeout(() => setSuccess(""), 3000);
-    } catch (err) {
-      console.error(err);
-      if (err.response && err.response.status === 403) {
-        setError(
-          "You do not have permission to apply. Please sign in as a candidate."
-        );
-      } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Failed to apply for job");
-      }
+    } catch {
+      setError("Failed to apply for job");
     }
   };
 
   const filteredJobs = jobs.filter(
-    (job) =>
-      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (job.posted_by &&
-        job.posted_by.toLowerCase().includes(searchTerm.toLowerCase()))
+    (j) =>
+      j.title.toLowerCase().includes(search.toLowerCase()) ||
+      (j.posted_by || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
-        darkMode
-          ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
-          : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
-      }`}
+      className="min-h-screen"
+      style={{
+        backgroundImage: `url(${dashImg})`,
+        backgroundAttachment: "fixed",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
-      {/* Header */}
-      <div
-        className={`sticky top-0 z-40 backdrop-blur-md transition-all duration-300 ${
-          darkMode
-            ? "bg-slate-900/80 border-b border-slate-700/50"
-            : "bg-white/80 border-b border-blue-100/50"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div
-                className={`p-3 rounded-xl transition-all duration-300 ${
-                  darkMode
-                    ? "bg-gradient-to-br from-indigo-600 to-purple-600"
-                    : "bg-gradient-to-br from-blue-600 to-indigo-600"
-                }`}
-              >
-                <Briefcase className="text-white" size={24} />
-              </div>
-              <div>
-                <h1
-                  className={`text-3xl font-bold bg-clip-text bg-gradient-to-r ${
-                    darkMode
-                      ? "from-indigo-400 to-purple-400 text-transparent"
-                      : "from-blue-600 to-indigo-600 text-transparent"
-                  }`}
-                >
-                  Discover Jobs
-                </h1>
-                <p
-                  className={`text-sm ${
-                    darkMode ? "text-slate-400" : "text-slate-600"
-                  }`}
-                >
-                  Find your next opportunity
-                </p>
-              </div>
-            </div>
+      <CandidateNav userName={userName} currentPage="findjobs" />
 
-            <div className="flex items-center gap-3 flex-wrap">
-              <a
-                href="/#/profile"
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm hover:scale-105 ${
-                  darkMode
-                    ? "text-indigo-400 hover:bg-slate-700/50"
-                    : "text-blue-600 hover:bg-blue-50"
-                }`}
-              >
-                👤 Profile
-              </a>
-              <a
-                href="/#/candidate-dashboard"
-                className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm hover:scale-105 ${
-                  darkMode
-                    ? "text-blue-400 hover:bg-slate-700/50"
-                    : "text-blue-600 hover:bg-blue-50"
-                }`}
-              >
-                📋 Applications
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Search */}
-        <div className="mb-12">
-          <div
-            className={`relative transition-all duration-300 ${
-              darkMode
-                ? "bg-slate-800/50 border border-slate-700/50 hover:border-indigo-500/50"
-                : "bg-white/50 border border-blue-100/50 hover:border-blue-200"
-            } rounded-2xl backdrop-blur-lg p-6 focus-within:ring-2 ${
-              darkMode
-                ? "focus-within:ring-indigo-500/50"
-                : "focus-within:ring-blue-400/50"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <Search
-                className={`flex-shrink-0 ${
-                  darkMode ? "text-indigo-400" : "text-blue-600"
-                }`}
-                size={24}
-              />
-              <input
-                type="text"
-                placeholder="Search jobs by title or company..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full bg-transparent outline-none placeholder-shown: text-lg transition-all duration-300 ${
-                  darkMode
-                    ? "text-white placeholder-slate-500"
-                    : "text-slate-900 placeholder-slate-400"
-                }`}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Alerts */}
-        {error && (
-          <div
-            className={`mb-8 p-4 rounded-xl backdrop-blur-lg border transition-all duration-300 animate-slide-down ${
-              darkMode
-                ? "bg-red-500/10 border-red-500/30 text-red-300"
-                : "bg-red-50 border-red-200 text-red-700"
-            }`}
-          >
-            ❌ {error}
-          </div>
-        )}
-        {success && (
-          <div
-            className={`mb-8 p-4 rounded-xl backdrop-blur-lg border transition-all duration-300 animate-slide-down ${
-              darkMode
-                ? "bg-green-500/10 border-green-500/30 text-green-300"
-                : "bg-green-50 border-green-200 text-green-700"
-            }`}
-          >
-            ✅ {success}
-          </div>
-        )}
-
-        {/* Loading */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
+      <main className="max-w-5xl mx-auto px-6 py-12">
+        {/* ================= SEARCH ================= */}
+        <div className="mb-10">
+          <div className="p-5 rounded-2xl bg-white/80 border border-[#E3D7C7] flex items-center gap-3">
             <div
-              className={`w-16 h-16 rounded-full animate-spin ${
-                darkMode
-                  ? "border-4 border-slate-700 border-t-indigo-500"
-                  : "border-4 border-blue-100 border-t-blue-600"
-              }`}
-            ></div>
-            <p
-              className={`text-lg font-medium ${
-                darkMode ? "text-slate-400" : "text-slate-600"
-              }`}
+              className="p-3 rounded-xl flex items-center justify-center"
+              style={{
+                background: `linear-gradient(135deg, ${theme.cinnamon}, ${theme.sage})`,
+              }}
             >
-              Loading amazing opportunities...
-            </p>
+              <SearchIcon style={{ fontSize: 18, color: "#fff" }} />
+            </div>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search jobs or companies..."
+              className="w-full bg-transparent outline-none text-lg text-[#6E4B2C]"
+            />
           </div>
-        ) : filteredJobs.length === 0 ? (
-          <div
-            className={`text-center py-20 rounded-2xl backdrop-blur-lg transition-all duration-300 ${
-              darkMode
-                ? "bg-slate-800/50 border border-slate-700/50"
-                : "bg-white/50 border border-blue-100/50"
-            }`}
-          >
-            <div className="text-5xl mb-4">🎯</div>
-            <h3
-              className={`text-2xl font-bold mb-2 ${
-                darkMode ? "text-white" : "text-slate-900"
-              }`}
-            >
-              {jobs.length === 0 ? "No jobs available" : "No matching jobs"}
-            </h3>
-            <p className={`${darkMode ? "text-slate-400" : "text-slate-600"}`}>
-              {jobs.length === 0
-                ? "Check back soon for exciting opportunities!"
-                : "Try adjusting your search terms"}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6">
-            {filteredJobs.map((job, index) => (
-              <div
-                key={job.id}
-                className={`group relative overflow-hidden rounded-2xl transition-all duration-500 hover:scale-102 ${
-                  darkMode
-                    ? "bg-gradient-to-br from-slate-800 to-slate-800/50 border border-slate-700/50 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/10"
-                    : "bg-gradient-to-br from-white to-blue-50/30 border border-blue-100/50 hover:border-blue-300 hover:shadow-2xl hover:shadow-blue-500/10"
-                }`}
-                style={{
-                  animation: `fadeInUp 0.6s ease-out ${index * 50}ms forwards`,
-                  opacity: 0,
-                }}
-              >
-                {/* Hover gradient effect */}
-                <div
-                  className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-                    darkMode
-                      ? "bg-gradient-to-r from-indigo-600/5 to-purple-600/5"
-                      : "bg-gradient-to-r from-blue-600/5 to-indigo-600/5"
-                  }`}
-                ></div>
+        </div>
 
-                <div className="relative p-6 md:p-8">
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-                    {/* Job Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-4 mb-4">
+        {/* ================= ALERTS ================= */}
+        {error && <Alert color="#dc2626">{error}</Alert>}
+        {success && <Alert color="#16a34a">{success}</Alert>}
+
+        {/* ================= CONTENT ================= */}
+        {loading ? (
+          <Loader />
+        ) : filteredJobs.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="space-y-6">
+            {filteredJobs.map((job) => {
+              const applied = appliedJobs.has(job.id);
+              return (
+                <div
+                  key={job.id}
+                  className="p-6 rounded-3xl bg-white/85 border border-[#E3D7C7] hover:shadow-lg transition"
+                >
+                  <div className="flex flex-col md:flex-row justify-between gap-6">
+                    <div className="flex-1">
+                      <div className="flex items-start gap-4 mb-3">
                         <div
-                          className={`p-3 rounded-xl flex-shrink-0 transition-all duration-300 group-hover:scale-110 ${
-                            darkMode
-                              ? "bg-gradient-to-br from-indigo-600/30 to-purple-600/30"
-                              : "bg-gradient-to-br from-blue-600/20 to-indigo-600/20"
-                          }`}
+                          className="p-3 rounded-xl flex items-center justify-center"
+                          style={{ background: theme.sand }}
                         >
-                          <Briefcase
-                            className={
-                              darkMode ? "text-indigo-400" : "text-blue-600"
-                            }
-                            size={24}
+                          <WorkIcon
+                            style={{ fontSize: 18, color: "#6E4B2C" }}
                           />
                         </div>
                         <div>
-                          <h3
-                            className={`text-xl md:text-2xl font-bold transition-colors duration-300 ${
-                              darkMode
-                                ? "text-white group-hover:text-indigo-400"
-                                : "text-slate-900 group-hover:text-blue-600"
-                            }`}
-                          >
+                          <h3 className="text-xl font-bold text-[#6E4B2C]">
                             {job.title}
                           </h3>
-                          <p
-                            className={`text-sm mt-1 ${
-                              darkMode ? "text-slate-400" : "text-slate-600"
-                            }`}
-                          >
-                            by {job.posted_by || "Recruiter"}
+                          <p className="text-sm text-[#6E4B2C]/70">
+                            {job.posted_by || "Recruiter"}
                           </p>
                         </div>
                       </div>
 
-                      <p
-                        className={`line-clamp-2 mb-4 text-sm md:text-base ${
-                          darkMode ? "text-slate-300" : "text-slate-700"
-                        }`}
-                      >
+                      <p className="text-sm text-[#6E4B2C]/80 line-clamp-3">
                         {job.description}
                       </p>
-
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all duration-300 ${
-                            darkMode
-                              ? "bg-green-500/20 text-green-300 border border-green-500/30"
-                              : "bg-green-100/80 text-green-700 border border-green-200"
-                          }`}
-                        >
-                          🟢 {job.status || "Active"}
-                        </span>
-                      </div>
                     </div>
 
-                    {/* Buttons */}
-                    <div className="flex flex-col gap-3 w-full sm:w-auto">
+                    <div className="flex flex-col gap-3 sm:min-w-[160px]">
                       <button
                         onClick={() => {
                           setSelectedJob(job);
                           setModalOpen(true);
                         }}
-                        className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-                          darkMode
-                            ? "bg-slate-700/50 text-slate-200 hover:bg-slate-700 border border-slate-600/50 hover:border-indigo-500/50"
-                            : "bg-slate-100 text-slate-900 hover:bg-slate-200 border border-slate-200 hover:border-blue-300"
-                        }`}
+                        className="px-4 py-2 rounded-xl font-semibold border border-[#E3D7C7] text-[#6E4B2C]"
                       >
-                        📖 Details
+                        View Details
                       </button>
+
                       <button
-                        onClick={() => handleApply(job.id)}
-                        disabled={appliedJobs.has(job.id)}
-                        className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
-                          appliedJobs.has(job.id)
-                            ? darkMode
-                              ? "bg-slate-700/30 text-slate-400 border border-slate-600/30"
-                              : "bg-slate-200 text-slate-500 border border-slate-300"
-                            : darkMode
-                            ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
-                            : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/50 border border-blue-300/50"
-                        }`}
+                        onClick={() => apply(job.id)}
+                        disabled={applied}
+                        className="px-4 py-2 rounded-xl font-semibold"
+                        style={{
+                          background: applied ? "#EFE7DA" : theme.cinnamon,
+                          color: applied ? theme.clay : theme.cream,
+                          cursor: applied ? "not-allowed" : "pointer",
+                        }}
                       >
-                        {appliedJobs.has(job.id)
-                          ? "✅ Applied"
-                          : "🚀 Apply Now"}
+                        {applied ? "Applied ✓" : "Apply Now"}
                       </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
-      </div>
+      </main>
 
-      <JobDetailsModal
+      <JobDetailsModalNew
         job={selectedJob}
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        darkMode={darkMode}
-        onApply={handleApply}
+        onApply={apply}
         isApplied={selectedJob ? appliedJobs.has(selectedJob.id) : false}
       />
-
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes slideDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-slide-down {
-          animation: slideDown 0.4s ease-out;
-        }
-        .hover\:scale-102:hover {
-          transform: scale(1.02);
-        }
-      `}</style>
     </div>
   );
-};
+}
 
-export default FindJobsPage;
+/* ================= HELPERS ================= */
+
+const Alert = ({ children, color }) => (
+  <div
+    className="mb-6 p-4 rounded-xl font-semibold"
+    style={{ background: `${color}15`, color }}
+  >
+    {children}
+  </div>
+);
+
+const Loader = () => (
+  <div className="py-20 flex justify-center">
+    <div
+      className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
+      style={{ borderColor: theme.cinnamon }}
+    />
+  </div>
+);
+
+const EmptyState = () => (
+  <div className="text-center py-20">
+    <h3 className="text-2xl font-bold text-[#6E4B2C] mb-2">No jobs found</h3>
+    <p className="text-[#6E4B2C]/70 mb-6">
+      Try adjusting your search or check back later
+    </p>
+    <a
+      href="/#/candidate-dashboard"
+      className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold"
+      style={{ background: theme.cinnamon, color: theme.cream }}
+    >
+      Go to Dashboard
+    </a>
+  </div>
+);

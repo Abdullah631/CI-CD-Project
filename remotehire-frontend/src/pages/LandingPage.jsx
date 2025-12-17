@@ -1,301 +1,440 @@
-import React, { useState } from "react";
-import { ArrowRight, Zap, CheckCircle, Users, BarChart3 } from "lucide-react";
+import React from "react";
+import BoltIcon from "@mui/icons-material/Bolt";
+import InsertChartIcon from "@mui/icons-material/InsertChart";
+import { LandingNav } from "../components/LandingNav";
+import landingImg from "../assets/landing.jpg";
+
+const features = [
+  {
+    title: "Smart CV Parsing",
+    description:
+      "AI extracts skills, experience, and qualifications instantly from any resume format.",
+    color: "var(--sage)",
+  },
+  {
+    title: "Live Interview Rooms",
+    description:
+      "Video calls, code editors, and whiteboards in one seamless experience.",
+    color: "var(--cinnamon)",
+  },
+  {
+    title: "Bias-Free Scoring",
+    description:
+      "Structured evaluations help teams make fair, data-driven hiring decisions.",
+    color: "var(--sage)",
+  },
+];
+
+const steps = [
+  {
+    number: "01",
+    title: "Upload & Parse",
+    description:
+      "Drop CVs or paste LinkedIn profiles. Our AI builds structured candidate profiles in seconds.",
+  },
+  {
+    number: "02",
+    title: "Interview & Collaborate",
+    description:
+      "Launch video rooms with integrated coding pads. Take notes and score candidates in real-time.",
+  },
+  {
+    number: "03",
+    title: "Decide & Hire",
+    description:
+      "Review ranked shortlists, compare candidates side-by-side, and extend offers confidently.",
+  },
+];
+
+const stats = [
+  { value: "48%", label: "Faster hiring cycle" },
+  { value: "4.6x", label: "More candidates reviewed" },
+  { value: "31%", label: "Higher offer acceptance" },
+];
 
 export const LandingPage = () => {
-  const [darkMode, setDarkMode] = useState(
-    localStorage.getItem("darkMode") === "true"
-  );
-
-  const features = [
-    {
-      icon: Zap,
-      title: "AI-Powered CV Analysis",
-      description:
-        "Extract key information from CVs automatically using advanced AI models",
-      color: "from-blue-600 to-indigo-600",
-    },
-    {
-      icon: Users,
-      title: "Smart Candidate Matching",
-      description:
-        "Match candidates with perfect jobs using intelligent similarity scoring",
-      color: "from-purple-600 to-pink-600",
-    },
-    {
-      icon: BarChart3,
-      title: "Real-Time Analytics",
-      description:
-        "Track applications, manage candidates, and optimize your hiring funnel",
-      color: "from-green-600 to-emerald-600",
-    },
-    {
-      icon: CheckCircle,
-      title: "Verified Credentials",
-      description:
-        "Automatic skill verification and experience validation for all candidates",
-      color: "from-orange-600 to-red-600",
-    },
-  ];
-
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
-        darkMode
-          ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
-          : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
-      }`}
+      className="min-h-screen"
+      style={{
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0.12)), url(${landingImg})`,
+        backgroundAttachment: "fixed",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
-      {/* Dark Mode Toggle */}
-      <div className="fixed top-4 right-4 z-50">
-        <button
-          onClick={() => {
-            setDarkMode(!darkMode);
-            localStorage.setItem("darkMode", !darkMode);
+      {/* Animated gradient background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div
+          className="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-30 animate-pulse"
+          style={{
+            background:
+              "radial-gradient(circle, var(--sage) 0%, transparent 70%)",
+            filter: "blur(60px)",
+            animationDuration: "4s",
           }}
-          className={`p-3 rounded-xl transition-all duration-300 hover:scale-110 shadow-lg ${
-            darkMode
-              ? "bg-slate-700 hover:bg-slate-600 text-yellow-400"
-              : "bg-white/60 hover:bg-white text-slate-600 backdrop-blur-lg"
-          }`}
-        >
-          {darkMode ? "☀️" : "🌙"}
-        </button>
+        />
+        <div
+          className="absolute top-1/2 -left-40 w-80 h-80 rounded-full opacity-25 animate-pulse"
+          style={{
+            background:
+              "radial-gradient(circle, var(--cinnamon) 0%, transparent 70%)",
+            filter: "blur(60px)",
+            animationDuration: "5s",
+            animationDelay: "1s",
+          }}
+        />
+        <div
+          className="absolute -bottom-20 right-1/4 w-72 h-72 rounded-full opacity-20 animate-pulse"
+          style={{
+            background:
+              "radial-gradient(circle, var(--tan) 0%, transparent 70%)",
+            filter: "blur(60px)",
+            animationDuration: "6s",
+            animationDelay: "2s",
+          }}
+        />
       </div>
 
-      {/* Background Decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className={`absolute top-0 right-0 w-96 h-96 rounded-full opacity-20 blur-3xl ${
-            darkMode ? "bg-indigo-600" : "bg-blue-600"
-          }`}
-        ></div>
-        <div
-          className={`absolute bottom-0 left-0 w-96 h-96 rounded-full opacity-20 blur-3xl ${
-            darkMode ? "bg-purple-600" : "bg-indigo-600"
-          }`}
-        ></div>
-      </div>
+      <LandingNav />
 
-      {/* Navigation */}
-      <nav
-        className={`sticky top-0 z-40 backdrop-blur-lg border-b transition-all duration-300 ${
-          darkMode
-            ? "bg-slate-800/80 border-slate-700/50"
-            : "bg-white/80 border-blue-100/50"
-        }`}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 group">
+      <main className="relative z-10">
+        {/* Hero Section */}
+        <section className="max-w-6xl mx-auto px-6 pt-20 pb-24">
+          <div className="text-center max-w-4xl mx-auto">
+            {/* Badge */}
             <div
-              className={`p-2 rounded-lg transition-all duration-300 group-hover:scale-110 ${
-                darkMode ? "bg-indigo-600/20" : "bg-blue-100"
-              }`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 animate-bounce"
+              style={{
+                background: "rgba(165, 185, 163, 0.2)",
+                border: "1px solid var(--border-strong)",
+                animationDuration: "2s",
+              }}
             >
-              <Zap
-                size={24}
-                className={darkMode ? "text-indigo-400" : "text-blue-600"}
-              />
-            </div>
-            <span
-              className={`text-xl font-bold transition-colors duration-300 ${
-                darkMode ? "text-white" : "text-slate-900"
-              }`}
-            >
-              RemoteHire.io
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <a
-              href="/#/signin"
-              className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
-                darkMode
-                  ? "text-slate-300 hover:text-white"
-                  : "text-slate-700 hover:text-slate-900"
-              }`}
-            >
-              Sign In
-            </a>
-            <a
-              href="/#/signup"
-              className={`px-6 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-                darkMode
-                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
-                  : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 border border-blue-300/50"
-              }`}
-            >
-              Get Started
-            </a>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-32 relative z-10">
-        {/* Badge */}
-        <div className="flex justify-center mb-8">
-          <div
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border backdrop-blur transition-all duration-300 ${
-              darkMode
-                ? "bg-indigo-600/20 border-indigo-500/30 text-indigo-300"
-                : "bg-blue-100/60 border-blue-200/80 text-blue-700"
-            }`}
-          >
-            <span className="text-lg">⚡</span>
-            <span className="font-semibold">AI-Powered Recruitment Platform</span>
-          </div>
-        </div>
-
-        {/* Main Title */}
-        <h1
-          className={`text-5xl sm:text-6xl lg:text-7xl font-bold text-center mb-6 leading-tight transition-colors duration-300 ${
-            darkMode ? "text-white" : "text-slate-900"
-          }`}
-        >
-          Revolutionize Hiring with{" "}
-          <span
-            className={`bg-gradient-to-r ${
-              darkMode
-                ? "from-indigo-400 to-purple-400"
-                : "from-blue-600 to-indigo-600"
-            } bg-clip-text text-transparent`}
-          >
-            AI Intelligence
-          </span>
-        </h1>
-
-        {/* Subtitle */}
-        <p
-          className={`text-lg sm:text-xl text-center max-w-3xl mx-auto mb-12 transition-colors duration-300 ${
-            darkMode ? "text-slate-400" : "text-slate-600"
-          }`}
-        >
-          Streamline candidate evaluation with AI-powered CV analysis, intelligent
-          matching, and real-time assessments—all in one powerful platform.
-        </p>
-
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
-          <a
-            href="/#/signup"
-            className={`w-full sm:w-auto px-8 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 transform hover:scale-105 active:scale-95 ${
-              darkMode
-                ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
-                : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 border border-blue-300/50"
-            }`}
-          >
-            Get Started Free
-            <ArrowRight size={20} />
-          </a>
-          <button
-            className={`w-full sm:w-auto px-8 py-4 rounded-xl font-semibold transition-all duration-300 border hover:scale-105 ${
-              darkMode
-                ? "bg-slate-700/30 border-slate-600/50 text-slate-200 hover:bg-slate-700/50"
-                : "bg-white/60 border-blue-100 text-slate-900 hover:bg-white/80"
-            }`}
-          >
-            📹 Watch Demo
-          </button>
-        </div>
-
-        {/* Feature Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-20">
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <div
-                key={index}
-                className={`rounded-2xl border backdrop-blur transition-all duration-300 overflow-hidden group hover:scale-105 ${
-                  darkMode
-                    ? "bg-slate-800/40 border-slate-700/50 hover:border-slate-700/80 shadow-xl shadow-black/10"
-                    : "bg-white/60 border-blue-100/50 hover:border-blue-200/80 shadow-lg shadow-blue-500/5"
-                }`}
+              <span style={{ color: "var(--cinnamon)" }}>✨</span>
+              <span
+                className="text-sm font-medium"
+                style={{ color: "var(--text-primary)" }}
               >
+                AI-Powered Hiring Platform
+              </span>
+            </div>
+
+            {/* Main heading with gradient */}
+            <h1
+              className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 leading-tight"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Hire smarter,{" "}
+              <span
+                className="bg-clip-text text-transparent"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(135deg, var(--cinnamon), var(--sage))",
+                }}
+              >
+                faster
+              </span>
+              , and with confidence.
+            </h1>
+
+            <p
+              className="text-xl mb-10 max-w-2xl mx-auto leading-relaxed"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              RemoteHire combines AI-powered CV parsing, live interview rooms,
+              and structured scoring to help teams find the perfect candidates.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-wrap justify-center gap-4 mb-12">
+              <a
+                href="/#/signup"
+                className="group inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                style={{
+                  background:
+                    "linear-gradient(135deg, var(--cinnamon), var(--sage))",
+                  color: "var(--cream)",
+                  boxShadow: "0 10px 40px rgba(178, 114, 77, 0.3)",
+                }}
+              >
+                Get Started Free
+              </a>
+              <a
+                href="/#/find-jobs"
+                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105"
+                style={{
+                  background: "var(--surface-0)",
+                  color: "var(--text-primary)",
+                  border: "2px solid var(--border-strong)",
+                }}
+              >
+                Browse Jobs
+              </a>
+            </div>
+
+            {/* Trust indicators */}
+            <div className="flex flex-wrap justify-center gap-6">
+              {[
+                "No credit card required",
+                "Free forever plan",
+                "Setup in 2 minutes",
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span style={{ color: "var(--sage)" }}>✅</span>
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    {item}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="max-w-6xl mx-auto px-6 py-20">
+          <div className="text-center mb-16">
+            <h2
+              className="text-3xl sm:text-4xl font-bold mb-4"
+              style={{ color: "var(--text-primary)" }}
+            >
+              Everything you need to hire remotely
+            </h2>
+            <p
+              style={{ color: "var(--text-secondary)" }}
+              className="text-lg max-w-2xl mx-auto"
+            >
+              A complete toolkit designed for modern distributed teams
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {features.map((feature, idx) => {
+              const Icon = feature.icon;
+              return (
                 <div
-                  className={`p-8 h-full flex flex-col ${
-                    darkMode ? "bg-gradient-to-br from-slate-800 to-transparent" : "bg-gradient-to-br from-white to-transparent"
-                  }`}
+                  key={idx}
+                  className="group p-8 rounded-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2"
+                  style={{
+                    background:
+                      "linear-gradient(145deg, var(--surface-0), var(--surface-1))",
+                    border: "1px solid var(--border-strong)",
+                    boxShadow: "0 20px 40px rgba(36, 26, 15, 0.1)",
+                  }}
                 >
                   <div
-                    className={`p-4 rounded-xl w-fit mb-4 transition-all duration-300 group-hover:scale-110 bg-gradient-to-r ${feature.color}`}
+                    className="w-14 h-14 rounded-xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
+                    style={{ background: `${feature.color}20` }}
                   >
-                    <Icon size={28} className="text-white" />
+                    <BoltIcon style={{ fontSize: 20, color: feature.color }} />
                   </div>
                   <h3
-                    className={`text-xl font-bold mb-2 transition-colors duration-300 ${
-                      darkMode ? "text-white" : "text-slate-900"
-                    }`}
+                    className="text-xl font-bold mb-3"
+                    style={{ color: "var(--text-primary)" }}
                   >
                     {feature.title}
                   </h3>
                   <p
-                    className={`transition-colors duration-300 ${
-                      darkMode ? "text-slate-400" : "text-slate-600"
-                    }`}
+                    style={{ color: "var(--text-secondary)" }}
+                    className="leading-relaxed"
                   >
                     {feature.description}
                   </p>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* How It Works */}
+        <section className="py-20" style={{ background: "var(--surface-0)" }}>
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <span
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4"
+                style={{
+                  background: "rgba(178, 114, 77, 0.15)",
+                  border: "1px solid var(--border-strong)",
+                }}
+              >
+                <BoltIcon style={{ fontSize: 16, color: "var(--cinnamon)" }} />
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  Simple 3-Step Process
+                </span>
+              </span>
+              <h2
+                className="text-3xl sm:text-4xl font-bold mb-4"
+                style={{ color: "var(--text-primary)" }}
+              >
+                From CV to hired in record time
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {steps.map((step, idx) => (
+                <div
+                  key={idx}
+                  className="relative p-8 rounded-2xl transition-all duration-300 hover:shadow-xl"
+                  style={{
+                    background: "var(--bg)",
+                    border: "1px solid var(--border-strong)",
+                  }}
+                >
+                  {/* Step number */}
+                  <div
+                    className="text-6xl font-bold mb-4 opacity-20"
+                    style={{ color: "var(--cinnamon)" }}
+                  >
+                    {step.number}
+                  </div>
+                  <h3
+                    className="text-xl font-bold mb-3"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {step.title}
+                  </h3>
+                  <p
+                    style={{ color: "var(--text-secondary)" }}
+                    className="leading-relaxed"
+                  >
+                    {step.description}
+                  </p>
+
+                  {/* Connector line */}
+                  {idx < steps.length - 1 && (
+                    <div
+                      className="hidden md:block absolute top-1/2 -right-4 w-8 h-0.5"
+                      style={{ background: "var(--border-stronger)" }}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* Stats Section */}
-        <div
-          className={`rounded-3xl border backdrop-blur transition-all duration-300 overflow-hidden ${
-            darkMode
-              ? "bg-slate-800/40 border-slate-700/50 shadow-xl shadow-black/20"
-              : "bg-white/60 border-blue-100/50 shadow-lg shadow-blue-500/5"
-          }`}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-12">
-            {[
-              { label: "Active Jobs", value: "1000+", emoji: "🎯" },
-              { label: "Candidates", value: "50K+", emoji: "👥" },
-              { label: "Placements", value: "95%", emoji: "🎉" },
-            ].map((stat, idx) => (
-              <div key={idx} className="text-center">
-                <div className="text-5xl mb-2">{stat.emoji}</div>
+        <section className="max-w-6xl mx-auto px-6 py-20">
+          <div className="grid md:grid-cols-3 gap-6">
+            {stats.map((stat, idx) => {
+              const Icon = stat.icon;
+              return (
                 <div
-                  className={`text-4xl font-bold mb-2 bg-gradient-to-r ${
-                    darkMode
-                      ? "from-indigo-400 to-purple-400"
-                      : "from-blue-600 to-indigo-600"
-                  } bg-clip-text text-transparent`}
+                  key={idx}
+                  className="text-center p-8 rounded-2xl transition-all duration-300 hover:scale-105"
+                  style={{
+                    background:
+                      "linear-gradient(145deg, var(--surface-0), var(--surface-1))",
+                    border: "1px solid var(--border-strong)",
+                    boxShadow: "0 15px 35px rgba(36, 26, 15, 0.08)",
+                  }}
                 >
-                  {stat.value}
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
+                    style={{ background: "rgba(165, 185, 163, 0.2)" }}
+                  >
+                    <InsertChartIcon
+                      style={{ fontSize: 20, color: "var(--cinnamon)" }}
+                    />
+                  </div>
+                  <div
+                    className="text-4xl font-bold mb-2"
+                    style={{ color: "var(--cinnamon)" }}
+                  >
+                    {stat.value}
+                  </div>
+                  <p
+                    style={{ color: "var(--text-secondary)" }}
+                    className="font-medium"
+                  >
+                    {stat.label}
+                  </p>
                 </div>
-                <p
-                  className={`text-sm font-semibold ${
-                    darkMode ? "text-slate-400" : "text-slate-600"
-                  }`}
-                >
-                  {stat.label}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Footer */}
-      <footer
-        className={`border-t transition-all duration-300 mt-20 ${
-          darkMode
-            ? "bg-slate-800/50 border-slate-700/50"
-            : "bg-white/50 border-blue-100/50"
-        }`}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <p
-            className={`text-sm ${
-              darkMode ? "text-slate-400" : "text-slate-600"
-            }`}
+        {/* CTA Section */}
+        <section className="max-w-4xl mx-auto px-6 py-20">
+          <div
+            className="relative overflow-hidden rounded-3xl p-12 text-center"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--cinnamon), var(--sage))",
+              boxShadow: "0 30px 60px rgba(178, 114, 77, 0.25)",
+            }}
           >
-            © 2024 RemoteHire.io. All rights reserved.
+            {/* Decorative circles */}
+            <div
+              className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-20"
+              style={{ background: "var(--cream)" }}
+            />
+            <div
+              className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full opacity-15"
+              style={{ background: "var(--cream)" }}
+            />
+
+            <div className="relative z-10">
+              <h2
+                className="text-3xl sm:text-4xl font-bold mb-4"
+                style={{ color: "var(--cream)" }}
+              >
+                Ready to transform your hiring?
+              </h2>
+              <p
+                className="text-lg mb-8 opacity-90 max-w-xl mx-auto"
+                style={{ color: "var(--cream)" }}
+              >
+                Join thousands of companies using RemoteHire to build
+                world-class remote teams.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <a
+                  href="/#/signup"
+                  className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105"
+                  style={{
+                    background: "var(--cream)",
+                    color: "var(--cinnamon)",
+                  }}
+                >
+                  Start Hiring Today
+                </a>
+                <a
+                  href="/#/signin"
+                  className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105"
+                  style={{
+                    background: "transparent",
+                    color: "var(--cream)",
+                    border: "2px solid var(--cream)",
+                  }}
+                >
+                  Sign In
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer
+          className="py-12 text-center border-t"
+          style={{
+            borderColor: "var(--border-strong)",
+            color: "var(--text-secondary)",
+          }}
+        >
+          <p className="text-sm">
+            © 2024 RemoteHire.io · Built with ❤️ for distributed teams
           </p>
-        </div>
-      </footer>
+        </footer>
+      </main>
     </div>
   );
 };

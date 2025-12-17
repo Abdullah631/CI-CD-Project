@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
-import { Mail, Lock, User, Eye, EyeOff, UserPlus, Camera } from "lucide-react";
-import { GoogleLogin } from "@react-oauth/google";
+// icons removed to simplify UI
+import LandingNav from "../components/LandingNav";
+import landingImg from "../assets/landing.jpg";
 
 export const SignUpPage = () => {
+  // State - unchanged for backend compatibility
   const [role, setRole] = useState("candidate");
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -17,10 +19,8 @@ export const SignUpPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [darkMode, setDarkMode] = useState(
-    localStorage.getItem("darkMode") === "true"
-  );
 
+  // Photo handler - unchanged
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -33,6 +33,7 @@ export const SignUpPage = () => {
     }
   };
 
+  // Form submit - unchanged for backend compatibility
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -67,7 +68,6 @@ export const SignUpPage = () => {
 
       if (response.status === 201) {
         setSuccess(response.data.message || "Registration successful!");
-
         setTimeout(() => {
           window.location.href = "/#/signin";
         }, 2000);
@@ -105,415 +105,496 @@ export const SignUpPage = () => {
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 flex items-center justify-center px-4 py-12 ${
-        darkMode
-          ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
-          : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
-      }`}
+      className="min-h-screen"
+      style={{
+        backgroundImage: `linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0.12)), url(${landingImg})`,
+        backgroundAttachment: "fixed",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
-      {/* Background Decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Animated gradient background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div
-          className={`absolute top-0 right-0 w-96 h-96 rounded-full opacity-10 blur-3xl ${
-            darkMode ? "bg-indigo-600" : "bg-blue-600"
-          }`}
-        ></div>
+          className="absolute -top-40 -right-40 w-96 h-96 rounded-full opacity-30 animate-pulse"
+          style={{
+            background:
+              "radial-gradient(circle, var(--sage) 0%, transparent 70%)",
+            filter: "blur(60px)",
+            animationDuration: "4s",
+          }}
+        />
         <div
-          className={`absolute bottom-0 left-0 w-96 h-96 rounded-full opacity-10 blur-3xl ${
-            darkMode ? "bg-purple-600" : "bg-indigo-600"
-          }`}
-        ></div>
+          className="absolute top-1/2 -left-40 w-80 h-80 rounded-full opacity-25 animate-pulse"
+          style={{
+            background:
+              "radial-gradient(circle, var(--cinnamon) 0%, transparent 70%)",
+            filter: "blur(60px)",
+            animationDuration: "5s",
+            animationDelay: "1s",
+          }}
+        />
+        <div
+          className="absolute -bottom-20 right-1/3 w-72 h-72 rounded-full opacity-20 animate-pulse"
+          style={{
+            background:
+              "radial-gradient(circle, var(--tan) 0%, transparent 70%)",
+            filter: "blur(60px)",
+            animationDuration: "6s",
+            animationDelay: "2s",
+          }}
+        />
       </div>
 
-      {/* Main Container */}
-      <div className="relative w-full max-w-md z-10">
-        <div
-          className={`rounded-3xl border backdrop-blur transition-all duration-300 shadow-2xl overflow-hidden ${
-            darkMode
-              ? "bg-slate-800/40 border-slate-700/50"
-              : "bg-white/80 border-blue-100/50"
-          }`}
-        >
-          {/* Header */}
+      <LandingNav />
+
+      <main className="relative z-10 flex items-center justify-center px-6 py-12 min-h-[calc(100vh-80px)]">
+        <div className="w-full max-w-lg">
+          {/* Card */}
           <div
-            className={`px-8 py-12 text-center border-b transition-all duration-300 ${
-              darkMode
-                ? "bg-purple-600/10 border-slate-700/50"
-                : "bg-purple-600/5 border-blue-100/50"
-            }`}
+            className="rounded-3xl overflow-hidden transition-all duration-500 hover:shadow-2xl"
+            style={{
+              background:
+                "linear-gradient(145deg, var(--surface-0), var(--surface-1))",
+              border: "1px solid var(--border-strong)",
+              boxShadow: "0 25px 50px rgba(36, 26, 15, 0.15)",
+            }}
           >
+            {/* Header */}
             <div
-              className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 transition-all duration-300 ${
-                darkMode ? "bg-purple-600/30" : "bg-purple-100"
-              }`}
+              className="px-8 py-8 text-center"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(165, 185, 163, 0.15), rgba(178, 114, 77, 0.1))",
+                borderBottom: "1px solid var(--border-strong)",
+              }}
             >
-              <UserPlus
-                size={32}
-                className={darkMode ? "text-purple-400" : "text-purple-600"}
-              />
+              {/* Icon */}
+              <div
+                className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 transition-transform duration-300 hover:scale-110 hover:rotate-3"
+                style={{
+                  background:
+                    "linear-gradient(135deg, var(--cinnamon), var(--sage))",
+                  boxShadow: "0 10px 30px rgba(178, 114, 77, 0.3)",
+                }}
+              >
+                {/* logo area */}
+              </div>
+
+              <h1
+                className="text-3xl font-bold mb-2"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Create Account
+              </h1>
+              <p style={{ color: "var(--text-secondary)" }}>
+                Join RemoteHire and start your journey
+              </p>
             </div>
-            <h1
-              className={`text-4xl font-bold mb-2 ${
-                darkMode ? "text-white" : "text-slate-900"
-              }`}
-            >
-              Join Us
-            </h1>
-            <p
-              className={`text-sm ${
-                darkMode ? "text-slate-400" : "text-slate-600"
-              }`}
-            >
-              Create your RemoteHire.io account
-            </p>
-          </div>
 
-          {/* Content */}
-          <div className="p-8 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
-            {/* Messages */}
-            {error && (
-              <div
-                className={`p-4 rounded-2xl border flex items-start gap-3 ${
-                  darkMode
-                    ? "bg-red-500/10 border-red-500/30 text-red-300"
-                    : "bg-red-50/80 border-red-200 text-red-700"
-                }`}
-              >
-                <span className="text-xl mt-0.5">⚠️</span>
-                <p className="font-medium text-sm">{error}</p>
-              </div>
-            )}
-            {success && (
-              <div
-                className={`p-4 rounded-2xl border flex items-start gap-3 ${
-                  darkMode
-                    ? "bg-green-500/10 border-green-500/30 text-green-300"
-                    : "bg-green-50/80 border-green-200 text-green-700"
-                }`}
-              >
-                <span className="text-xl mt-0.5">✅</span>
-                <p className="font-medium text-sm">{success}</p>
-              </div>
-            )}
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Role Selection */}
-              <div>
-                <label
-                  className={`block text-sm font-semibold mb-3 ${
-                    darkMode ? "text-slate-300" : "text-slate-700"
-                  }`}
+            {/* Form Section */}
+            <div className="p-8 space-y-5 max-h-[60vh] overflow-y-auto">
+              {/* Error Message */}
+              {error && (
+                <div
+                  className="p-4 rounded-xl flex items-start gap-3 animate-pulse"
+                  style={{
+                    background: "rgba(220, 38, 38, 0.1)",
+                    border: "1px solid rgba(220, 38, 38, 0.3)",
+                  }}
                 >
-                  I am a...
-                </label>
-                <div className="flex gap-3">
-                  {["candidate", "recruiter"].map((r) => (
-                    <label
-                      key={r}
-                      className={`flex-1 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all duration-300 text-center font-semibold ${
-                        role === r
-                          ? darkMode
-                            ? "border-indigo-500 bg-indigo-600/20 text-indigo-300"
-                            : "border-blue-500 bg-blue-100 text-blue-700"
-                          : darkMode
-                          ? "border-slate-600/50 bg-slate-700/30 text-slate-400 hover:border-slate-500/50"
-                          : "border-slate-200 bg-slate-100 text-slate-600 hover:border-slate-300"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="role"
-                        value={r}
-                        checked={role === r}
-                        onChange={(e) => setRole(e.target.value)}
-                        className="hidden"
-                      />
-                      {r === "candidate" ? "👨‍💼 Candidate" : "👔 Recruiter"}
-                    </label>
-                  ))}
+                  <span className="text-xl">⚠️</span>
+                  <p className="font-medium text-red-600 text-sm">{error}</p>
                 </div>
-              </div>
+              )}
 
-              {/* Photo Upload */}
-              <div>
-                <label
-                  className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
-                    darkMode ? "text-slate-300" : "text-slate-700"
-                  }`}
+              {/* Success Message */}
+              {success && (
+                <div
+                  className="p-4 rounded-xl flex items-start gap-3"
+                  style={{
+                    background: "rgba(34, 197, 94, 0.1)",
+                    border: "1px solid rgba(34, 197, 94, 0.3)",
+                  }}
                 >
-                  <Camera size={16} />
-                  Profile Photo
-                </label>
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <div
-                    className={`px-4 py-6 rounded-xl border-2 border-dashed text-center transition-all duration-300 ${
-                      darkMode
-                        ? "border-slate-600/50 hover:border-indigo-500/50 hover:bg-slate-700/20"
-                        : "border-blue-200 hover:border-blue-400 hover:bg-blue-50/50"
-                    }`}
+                  <span className="text-xl">✅</span>
+                  <p className="font-medium text-green-600 text-sm">
+                    {success}
+                  </p>
+                </div>
+              )}
+
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Role Selection */}
+                <div className="space-y-3">
+                  <label
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-primary)" }}
                   >
-                    {photoPreview ? (
-                      <div className="flex flex-col items-center">
-                        <img
-                          src={photoPreview}
-                          alt="Preview"
-                          className="w-16 h-16 rounded-full mb-2 object-cover"
+                    I am a...
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      {
+                        value: "candidate",
+                        label: "Candidate",
+                        desc: "Looking for jobs",
+                      },
+                      {
+                        value: "recruiter",
+                        label: "Recruiter",
+                        desc: "Hiring talent",
+                      },
+                    ].map((r) => (
+                      <label
+                        key={r.value}
+                        className={`relative p-4 rounded-xl cursor-pointer transition-all duration-300 hover:scale-[1.02] ${
+                          role === r.value ? "ring-2" : ""
+                        }`}
+                        style={{
+                          background:
+                            role === r.value
+                              ? "linear-gradient(135deg, rgba(178, 114, 77, 0.15), rgba(165, 185, 163, 0.1))"
+                              : "var(--bg)",
+                          border: `2px solid ${
+                            role === r.value
+                              ? "var(--cinnamon)"
+                              : "var(--border-strong)"
+                          }`,
+                          ringColor: "var(--cinnamon)",
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="role"
+                          value={r.value}
+                          checked={role === r.value}
+                          onChange={(e) => setRole(e.target.value)}
+                          className="hidden"
                         />
-                        <p
-                          className={`text-sm font-semibold ${
-                            darkMode ? "text-slate-300" : "text-slate-700"
-                          }`}
-                        >
-                          Click to change
-                        </p>
-                      </div>
-                    ) : (
-                      <div>
-                        <div
-                          className={`text-3xl mb-2 ${
-                            darkMode ? "text-indigo-400" : "text-blue-600"
-                          }`}
-                        >
-                          📸
+                        <div className="text-center py-1">
+                          <span
+                            className="font-semibold block"
+                            style={{
+                              color:
+                                role === r.value
+                                  ? "var(--cinnamon)"
+                                  : "var(--text-primary)",
+                            }}
+                          >
+                            {r.label}
+                          </span>
+                          <span
+                            className="text-xs"
+                            style={{ color: "var(--text-secondary)" }}
+                          >
+                            {r.desc}
+                          </span>
                         </div>
-                        <p
-                          className={`text-sm font-semibold ${
-                            darkMode ? "text-slate-300" : "text-slate-700"
-                          }`}
-                        >
-                          Add your photo
-                        </p>
-                        <p
-                          className={`text-xs ${
-                            darkMode ? "text-slate-500" : "text-slate-500"
-                          }`}
-                        >
-                          (Optional)
-                        </p>
-                      </div>
-                    )}
+                        {role === r.value && (
+                          <div
+                            className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
+                            style={{
+                              background: "var(--cinnamon)",
+                              color: "var(--cream)",
+                            }}
+                          >
+                            ✓
+                          </div>
+                        )}
+                      </label>
+                    ))}
                   </div>
                 </div>
-              </div>
 
-              {/* Username */}
-              <div>
-                <label
-                  htmlFor="username"
-                  className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
-                    darkMode ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
-                  <User size={16} />
-                  Username
-                </label>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="your_username"
-                  className={`w-full px-4 py-3 rounded-xl transition-all duration-300 border font-medium ${
-                    darkMode
-                      ? "bg-slate-700/30 border-slate-600/50 text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
-                      : "bg-white border-blue-100 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                  }`}
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label
-                  htmlFor="email"
-                  className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
-                    darkMode ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
-                  <Mail size={16} />
-                  Email
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  className={`w-full px-4 py-3 rounded-xl transition-all duration-300 border font-medium ${
-                    darkMode
-                      ? "bg-slate-700/30 border-slate-600/50 text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
-                      : "bg-white border-blue-100 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                  }`}
-                />
-              </div>
-
-              {/* Password */}
-              <div>
-                <label
-                  htmlFor="password"
-                  className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
-                    darkMode ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
-                  <Lock size={16} />
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className={`w-full px-4 py-3 rounded-xl transition-all duration-300 border font-medium pr-12 ${
-                      darkMode
-                        ? "bg-slate-700/30 border-slate-600/50 text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
-                        : "bg-white border-blue-100 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={`absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors duration-300 ${
-                      darkMode
-                        ? "text-slate-400 hover:text-slate-300"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
+                {/* Photo Upload */}
+                <div className="space-y-2">
+                  <label
+                    className="flex items-center gap-2 text-sm font-semibold"
+                    style={{ color: "var(--text-primary)" }}
                   >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
+                    Profile Photo
+                    <span
+                      className="text-xs font-normal"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      (Optional)
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div
+                      className="p-6 rounded-xl border-2 border-dashed text-center transition-all duration-300 hover:border-solid hover:scale-[1.01]"
+                      style={{
+                        borderColor: photoPreview
+                          ? "var(--sage)"
+                          : "var(--border-strong)",
+                        background: photoPreview
+                          ? "rgba(165, 185, 163, 0.1)"
+                          : "var(--bg)",
+                      }}
+                    >
+                      {photoPreview ? (
+                        <div className="flex flex-col items-center">
+                          <img
+                            src={photoPreview}
+                            alt="Preview"
+                            className="w-20 h-20 rounded-full mb-3 object-cover ring-4"
+                            style={{ ringColor: "var(--sage)" }}
+                          />
+                          <p
+                            className="text-sm font-medium"
+                            style={{ color: "var(--sage)" }}
+                          >
+                            ✓ Photo added · Click to change
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <div
+                            className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3"
+                            style={{ background: "rgba(178, 114, 77, 0.1)" }}
+                          >
+                            <div style={{ fontSize: 24 }}>👤</div>
+                          </div>
+                          <p
+                            className="text-sm font-medium"
+                            style={{ color: "var(--text-primary)" }}
+                          >
+                            Click or drag to upload
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {/* Confirm Password */}
-              <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className={`block text-sm font-semibold mb-2 flex items-center gap-2 ${
-                    darkMode ? "text-slate-300" : "text-slate-700"
-                  }`}
-                >
-                  <Lock size={16} />
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className={`w-full px-4 py-3 rounded-xl transition-all duration-300 border font-medium pr-12 ${
-                      darkMode
-                        ? "bg-slate-700/30 border-slate-600/50 text-white placeholder-slate-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20"
-                        : "bg-white border-blue-100 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className={`absolute right-4 top-1/2 transform -translate-y-1/2 transition-colors duration-300 ${
-                      darkMode
-                        ? "text-slate-400 hover:text-slate-300"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
+                {/* Username Field */}
+                <div className="space-y-2">
+                  <label
+                    htmlFor="username"
+                    className="flex items-center gap-2 text-sm font-semibold"
+                    style={{ color: "var(--text-primary)" }}
                   >
-                    {showConfirmPassword ? (
-                      <EyeOff size={20} />
-                    ) : (
-                      <Eye size={20} />
-                    )}
-                  </button>
+                    Username
+                  </label>
+                  <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    required
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Choose a username"
+                    className="w-full px-4 py-3.5 rounded-xl transition-all duration-300 focus:scale-[1.02] focus:shadow-lg outline-none"
+                    style={{
+                      background: "var(--bg)",
+                      border: "2px solid var(--border-strong)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
                 </div>
-              </div>
 
-              {/* Sign Up Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full py-3 px-6 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
-                  darkMode
-                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-purple-500/50 border border-purple-500/50"
-                    : "bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:shadow-lg hover:shadow-purple-500/30 border border-purple-300/50"
-                }`}
-              >
-                {loading ? "⏳ Creating Account..." : "✨ Create Account"}
-              </button>
-            </form>
-          </div>
+                {/* Email Field */}
+                <div className="space-y-2">
+                  <label
+                    htmlFor="email"
+                    className="flex items-center gap-2 text-sm font-semibold"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    <span style={{ color: "var(--cinnamon)" }}>📧</span>
+                    Email
+                  </label>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="w-full px-4 py-3.5 rounded-xl transition-all duration-300 focus:scale-[1.02] focus:shadow-lg outline-none"
+                    style={{
+                      background: "var(--bg)",
+                      border: "2px solid var(--border-strong)",
+                      color: "var(--text-primary)",
+                    }}
+                  />
+                </div>
 
-          {/* Footer */}
-          <div
-            className={`px-8 py-6 text-center border-t transition-all duration-300 ${
-              darkMode
-                ? "bg-slate-800/30 border-slate-700/50"
-                : "bg-blue-50/30 border-blue-100/50"
-            }`}
-          >
-            <p
-              className={`text-sm ${
-                darkMode ? "text-slate-400" : "text-slate-600"
-              }`}
+                {/* Password Field */}
+                <div className="space-y-2">
+                  <label
+                    htmlFor="password"
+                    className="flex items-center gap-2 text-sm font-semibold"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    <span style={{ color: "var(--cinnamon)" }}>🔒</span>
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Create a strong password"
+                      className="w-full px-4 py-3.5 rounded-xl transition-all duration-300 focus:scale-[1.02] focus:shadow-lg outline-none pr-12"
+                      style={{
+                        background: "var(--bg)",
+                        border: "2px solid var(--border-strong)",
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 transition-transform duration-200 hover:scale-110 text-sm font-medium"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm Password Field */}
+                <div className="space-y-2">
+                  <label
+                    htmlFor="confirmPassword"
+                    className="flex items-center gap-2 text-sm font-semibold"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    <span style={{ color: "var(--cinnamon)" }}>🔒</span>
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="Confirm your password"
+                      className="w-full px-4 py-3.5 rounded-xl transition-all duration-300 focus:scale-[1.02] focus:shadow-lg outline-none pr-12"
+                      style={{
+                        background: "var(--bg)",
+                        border: "2px solid var(--border-strong)",
+                        color: "var(--text-primary)",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 transition-transform duration-200 hover:scale-110 text-sm font-medium"
+                      style={{ color: "var(--text-secondary)" }}
+                    >
+                      {showConfirmPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  {/* Password match indicator */}
+                  {confirmPassword && (
+                    <p
+                      className="text-xs font-medium flex items-center gap-1"
+                      style={{
+                        color:
+                          password === confirmPassword
+                            ? "var(--sage)"
+                            : "#dc2626",
+                      }}
+                    >
+                      {password === confirmPassword ? (
+                        <>✓ Passwords match</>
+                      ) : (
+                        <>⚠️ Passwords don't match</>
+                      )}
+                    </p>
+                  )}
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="group w-full flex items-center justify-center gap-3 px-6 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, var(--cinnamon), var(--sage))",
+                    color: "var(--cream)",
+                    boxShadow: "0 10px 30px rgba(178, 114, 77, 0.3)",
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Creating Account...
+                    </>
+                  ) : (
+                    <>Create Account</>
+                  )}
+                </button>
+              </form>
+            </div>
+
+            {/* Footer */}
+            <div
+              className="px-8 py-5 text-center"
+              style={{
+                background: "rgba(165, 185, 163, 0.08)",
+                borderTop: "1px solid var(--border-strong)",
+              }}
             >
-              Already have an account?{" "}
-              <a
-                href="/#/signin"
-                className={`font-bold hover:underline ${
-                  darkMode ? "text-indigo-400" : "text-blue-600"
-                }`}
-              >
-                Sign in
-              </a>
-            </p>
+              <p style={{ color: "var(--text-secondary)" }}>
+                Already have an account?{" "}
+                <a
+                  href="/#/signin"
+                  className="font-bold transition-all duration-200 hover:underline"
+                  style={{ color: "var(--cinnamon)" }}
+                >
+                  Sign in
+                </a>
+              </p>
+            </div>
           </div>
+
+          {/* Bottom text */}
+          <p
+            className="text-center mt-6 text-sm"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            By creating an account, you agree to our{" "}
+            <a
+              href="#"
+              className="underline hover:no-underline"
+              style={{ color: "var(--cinnamon)" }}
+            >
+              Terms
+            </a>{" "}
+            and{" "}
+            <a
+              href="#"
+              className="underline hover:no-underline"
+              style={{ color: "var(--cinnamon)" }}
+            >
+              Privacy Policy
+            </a>
+          </p>
         </div>
-
-        {/* Dark Mode Toggle */}
-        <button
-          onClick={() => {
-            setDarkMode(!darkMode);
-            localStorage.setItem("darkMode", !darkMode);
-          }}
-          className={`absolute top-4 right-4 p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-            darkMode
-              ? "bg-slate-700 hover:bg-slate-600 text-yellow-400"
-              : "bg-white/60 hover:bg-white text-slate-600"
-          }`}
-        >
-          {darkMode ? "☀️" : "🌙"}
-        </button>
-      </div>
-
-      <style>{`
-        div::-webkit-scrollbar {
-          width: 6px;
-        }
-        div::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        div::-webkit-scrollbar-thumb {
-          background: ${darkMode ? "#4f46e5" : "#3b82f6"};
-          border-radius: 3px;
-        }
-      `}</style>
+      </main>
     </div>
   );
 };

@@ -1,520 +1,240 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
-import {
-  User,
-  Mail,
-  Phone,
-  Briefcase,
-  Code,
-  Award,
-  BookOpen,
-  Download,
-  ArrowLeft,
-} from "lucide-react";
+// icons removed to simplify UI; keep only logo
+import CandidateNav from "../components/CandidateNav";
+import dashImg from "../assets/dash.jpg";
+import { API_BASE_URL } from "../config";
 
-export const CandidateDetailsPage = () => {
+/* ================= THEME ================= */
+const theme = {
+  sage: "#B7C7B1",
+  cinnamon: "#B87B4B",
+  sand: "#CDB08E",
+  cream: "#FBF6E6",
+  clay: "#6E4B2C",
+};
+
+export default function CandidateDetailsPage() {
   const [candidate, setCandidate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [darkMode, setDarkMode] = useState(
-    localStorage.getItem("darkMode") === "true"
-  );
+  const [userName, setUserName] = useState("");
 
   const token = localStorage.getItem("token");
+  const match = window.location.hash.match(/\/candidate\/(\d+)/);
+  const candidateId = match ? match[1] : null;
 
-  const candidateIdMatch = window.location.hash.match(/\/candidate\/(\d+)/);
-  const candidateId = candidateIdMatch ? candidateIdMatch[1] : null;
+  /* ================= USER ================= */
+  useEffect(() => {
+    const u = localStorage.getItem("user");
+    if (u) setUserName(JSON.parse(u)?.username || "User");
+  }, []);
 
+  /* ================= FETCH ================= */
   useEffect(() => {
     if (!candidateId) {
       setError("Invalid candidate ID");
       setLoading(false);
       return;
     }
-    fetchCandidateDetails();
+
+    const load = async () => {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/api/candidate/${candidateId}/cv-metadata/`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setCandidate(res.data || {});
+      } catch {
+        setError("Failed to load candidate details");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
   }, [candidateId]);
 
-  const fetchCandidateDetails = async () => {
+  const metadata = candidate?.cv_metadata || {};
+
+  /* ================= ACTIONS ================= */
+  const openCV = async (type) => {
     try {
-      const response = await axios.get(
-        `${window.API_BASE_URL}/api/candidate/${candidateId}/cv-metadata/`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+      const res = await axios.get(
+        `${API_BASE_URL}/api/candidate/${candidateId}/cv/${type}/`,
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      setCandidate(response.data);
-      setError("");
-    } catch (err) {
-      console.error("Error fetching candidate:", err);
-      setError("Failed to load candidate details");
-    } finally {
-      setLoading(false);
+      window.open(
+        res.data?.view_url || res.data?.download_url || candidate.cv_url
+      );
+    } catch {
+      candidate?.cv_url && window.open(candidate.cv_url);
     }
   };
 
-  if (loading) {
+  /* ================= STATES ================= */
+  if (loading)
     return (
-      <div
-        className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
-          darkMode
-            ? "bg-gradient-to-br from-slate-900 to-slate-800"
-            : "bg-gradient-to-br from-blue-50 to-indigo-50"
-        }`}
-      >
+      <div className="min-h-screen flex items-center justify-center">
         <div
-          className={`animate-spin rounded-full h-16 w-16 border-4 border-transparent ${
-            darkMode ? "border-t-indigo-500" : "border-t-blue-600"
-          }`}
-        ></div>
+          className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
+          style={{ borderColor: theme.cinnamon }}
+        />
       </div>
     );
-  }
 
-  if (error || !candidate) {
+  if (error)
     return (
-      <div
-        className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${
-          darkMode
-            ? "bg-gradient-to-br from-slate-900 to-slate-800"
-            : "bg-gradient-to-br from-blue-50 to-indigo-50"
-        }`}
-      >
-        <div
-          className={`rounded-2xl border backdrop-blur p-8 text-center ${
-            darkMode
-              ? "bg-red-500/10 border-red-500/30"
-              : "bg-red-50/80 border-red-200"
-          }`}
-        >
-          <p
-            className={`text-lg font-semibold ${
-              darkMode ? "text-red-300" : "text-red-700"
-            }`}
-          >
-            {error || "Candidate not found"}
-          </p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-red-600 font-semibold">{error}</p>
       </div>
     );
-  }
-
-  const metadata = candidate.cv_metadata || {};
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
-        darkMode
-          ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
-          : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
-      }`}
+      className="min-h-screen"
+      style={{
+        backgroundImage: `url(${dashImg})`,
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "fixed",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
-      {/* Header */}
-      <header
-        className={`sticky top-0 z-40 backdrop-blur-lg border-b transition-all duration-300 ${
-          darkMode
-            ? "bg-slate-800/80 border-slate-700/50"
-            : "bg-white/80 border-blue-100/50"
-        }`}
-      >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <button
-            onClick={() => window.history.back()}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 ${
-              darkMode
-                ? "text-slate-300 hover:bg-slate-700/50"
-                : "text-slate-700 hover:bg-blue-100"
-            }`}
-          >
-            <ArrowLeft size={20} />
-            Back
-          </button>
-          <button
-            onClick={() => {
-              setDarkMode(!darkMode);
-              localStorage.setItem("darkMode", !darkMode);
-            }}
-            className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-              darkMode
-                ? "bg-slate-700 hover:bg-slate-600 text-yellow-400"
-                : "bg-slate-100 hover:bg-slate-200 text-slate-600"
-            }`}
-          >
-            {darkMode ? "☀️" : "🌙"}
-          </button>
-        </div>
-      </header>
+      <CandidateNav userName={userName} currentPage="details" />
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Candidate Header */}
+      <main className="max-w-5xl mx-auto px-6 py-12">
+        {/* ================= HEADER ================= */}
         <div
-          className={`rounded-3xl border backdrop-blur transition-all duration-300 overflow-hidden mb-8 ${
-            darkMode
-              ? "bg-slate-800/40 border-slate-700/50 shadow-xl shadow-black/20"
-              : "bg-white/60 border-blue-100/50 shadow-lg shadow-blue-500/5"
-          }`}
+          className="rounded-3xl p-8 mb-8"
+          style={{
+            background: "rgba(255,255,255,0.85)",
+            border: `1px solid ${theme.sand}`,
+          }}
         >
-          <div
-            className={`px-8 py-12 border-b transition-all duration-300 ${
-              darkMode
-                ? "bg-indigo-600/10 border-slate-700/50"
-                : "bg-blue-600/5 border-blue-100/50"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-6">
-              <div className="flex-1">
-                <h1
-                  className={`text-4xl font-bold mb-2 ${
-                    darkMode ? "text-white" : "text-slate-900"
-                  }`}
-                >
-                  {candidate.candidate_name}
-                </h1>
-                <p
-                  className={`text-lg flex items-center gap-2 mb-2 ${
-                    darkMode ? "text-slate-400" : "text-slate-600"
-                  }`}
-                >
-                  <Mail size={18} />
-                  {candidate.candidate_email}
-                </p>
+          <div className="flex flex-col md:flex-row justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-bold text-[#6E4B2C]">
+                {candidate.candidate_name}
+              </h1>
+
+              <div className="mt-3 space-y-1 text-[#6E4B2C]/70">
+                <p>{candidate.candidate_email}</p>
                 {candidate.candidate_phone && (
-                  <p
-                    className={`text-lg flex items-center gap-2 ${
-                      darkMode ? "text-slate-400" : "text-slate-600"
-                    }`}
-                  >
-                    <Phone size={18} />
-                    {candidate.candidate_phone}
-                  </p>
+                  <p>{candidate.candidate_phone}</p>
                 )}
               </div>
-              {candidate.cv_url && (
-                <a
-                  href={candidate.cv_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-                    darkMode
-                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/50 border border-indigo-500/50"
-                      : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:shadow-lg hover:shadow-blue-500/30 border border-blue-300/50"
-                  }`}
+            </div>
+
+            {candidate.cv_url && (
+              <div className="flex gap-3">
+                <button
+                  onClick={() => openCV("view")}
+                  className="px-4 py-2 rounded-xl font-semibold"
+                  style={{ background: theme.cinnamon, color: theme.cream }}
                 >
-                  <Download size={20} />
-                  Download CV
-                </a>
-              )}
-            </div>
-          </div>
-
-          {/* Professional Profile */}
-          {Object.keys(metadata).length > 0 && !metadata.error && (
-            <div className="p-8 space-y-8">
-              {/* Key Info */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {metadata.current_title && (
-                  <div
-                    className={`p-4 rounded-xl transition-all duration-300 ${
-                      darkMode
-                        ? "bg-slate-700/30 border border-slate-600/50"
-                        : "bg-blue-50/50 border border-blue-100/50"
-                    }`}
-                  >
-                    <p
-                      className={`text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-2 ${
-                        darkMode ? "text-slate-400" : "text-slate-600"
-                      }`}
-                    >
-                      <Briefcase size={14} />
-                      Current Title
-                    </p>
-                    <p
-                      className={`text-lg font-bold ${
-                        darkMode ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      {metadata.current_title}
-                    </p>
-                  </div>
-                )}
-
-                {metadata.years_of_experience !== undefined && (
-                  <div
-                    className={`p-4 rounded-xl transition-all duration-300 ${
-                      darkMode
-                        ? "bg-slate-700/30 border border-slate-600/50"
-                        : "bg-blue-50/50 border border-blue-100/50"
-                    }`}
-                  >
-                    <p
-                      className={`text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-2 ${
-                        darkMode ? "text-slate-400" : "text-slate-600"
-                      }`}
-                    >
-                      <Briefcase size={14} />
-                      Experience
-                    </p>
-                    <p
-                      className={`text-lg font-bold ${
-                        darkMode ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      {metadata.years_of_experience}+ years
-                    </p>
-                  </div>
-                )}
-
-                {metadata.email && (
-                  <div
-                    className={`p-4 rounded-xl transition-all duration-300 ${
-                      darkMode
-                        ? "bg-slate-700/30 border border-slate-600/50"
-                        : "bg-blue-50/50 border border-blue-100/50"
-                    }`}
-                  >
-                    <p
-                      className={`text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-2 ${
-                        darkMode ? "text-slate-400" : "text-slate-600"
-                      }`}
-                    >
-                      <Mail size={14} />
-                      Email
-                    </p>
-                    <p
-                      className={`text-sm font-bold ${
-                        darkMode ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      {metadata.email}
-                    </p>
-                  </div>
-                )}
+                  View CV
+                </button>
+                <button
+                  onClick={() => openCV("download")}
+                  className="px-4 py-2 rounded-xl font-semibold"
+                  style={{ background: theme.sand, color: theme.clay }}
+                >
+                  Download
+                </button>
               </div>
+            )}
+          </div>
+        </div>
 
-              {/* Skills */}
-              {metadata.skills && metadata.skills.length > 0 && (
-                <div>
-                  <h3
-                    className={`text-xl font-bold mb-4 flex items-center gap-2 ${
-                      darkMode ? "text-white" : "text-slate-900"
-                    }`}
-                  >
-                    <Code
-                      size={24}
-                      className={darkMode ? "text-blue-400" : "text-blue-600"}
-                    />
-                    Skills
-                  </h3>
-                  <div className="flex flex-wrap gap-3">
-                    {metadata.skills.map((skill, idx) => (
-                      <span
-                        key={idx}
-                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:scale-105 ${
-                          darkMode
-                            ? "bg-blue-600/30 text-blue-300 border border-blue-500/50"
-                            : "bg-blue-100 text-blue-800 border border-blue-200"
-                        }`}
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+        {/* ================= SECTIONS ================= */}
+        <div className="space-y-10">
+          {/* SKILLS */}
+          {metadata.skills?.length > 0 && (
+            <Section title="Skills">
+              {metadata.skills.map((s, i) => (
+                <Tag key={i}>{s}</Tag>
+              ))}
+            </Section>
+          )}
 
-              {/* Programming Languages */}
-              {metadata.programming_languages &&
-                metadata.programming_languages.length > 0 && (
-                  <div>
-                    <h3
-                      className={`text-xl font-bold mb-4 flex items-center gap-2 ${
-                        darkMode ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      <Code
-                        size={24}
-                        className={
-                          darkMode ? "text-purple-400" : "text-purple-600"
-                        }
-                      />
-                      Languages
-                    </h3>
-                    <div className="flex flex-wrap gap-3">
-                      {metadata.programming_languages.map((lang, idx) => (
-                        <span
-                          key={idx}
-                          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 hover:scale-105 ${
-                            darkMode
-                              ? "bg-purple-600/30 text-purple-300 border border-purple-500/50"
-                              : "bg-purple-100 text-purple-800 border border-purple-200"
-                          }`}
-                        >
-                          {lang}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+          {/* LANGUAGES */}
+          {metadata.programming_languages?.length > 0 && (
+            <Section title="Programming Languages">
+              {metadata.programming_languages.map((l, i) => (
+                <Tag key={i}>{l}</Tag>
+              ))}
+            </Section>
+          )}
 
-              {/* Education */}
-              {metadata.education && metadata.education.length > 0 && (
-                <div>
-                  <h3
-                    className={`text-xl font-bold mb-4 flex items-center gap-2 ${
-                      darkMode ? "text-white" : "text-slate-900"
-                    }`}
-                  >
-                    <BookOpen
-                      size={24}
-                      className={
-                        darkMode ? "text-indigo-400" : "text-indigo-600"
-                      }
-                    />
-                    Education
-                  </h3>
-                  <div className="space-y-3">
-                    {metadata.education.map((edu, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-5 rounded-xl border transition-all duration-300 hover:scale-102 ${
-                          darkMode
-                            ? "bg-slate-700/30 border-slate-600/50"
-                            : "bg-indigo-50/50 border-indigo-100/50"
-                        }`}
-                      >
-                        <p
-                          className={`font-bold text-lg ${
-                            darkMode ? "text-white" : "text-slate-900"
-                          }`}
-                        >
-                          {edu.degree}
-                        </p>
-                        <p
-                          className={`text-sm font-semibold ${
-                            darkMode ? "text-indigo-300" : "text-indigo-600"
-                          }`}
-                        >
-                          {edu.field}
-                        </p>
-                        <p
-                          className={`text-sm ${
-                            darkMode ? "text-slate-400" : "text-slate-600"
-                          }`}
-                        >
-                          {edu.institution}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+          {/* EDUCATION */}
+          {metadata.education?.length > 0 && (
+            <Section title="Education">
+              <div className="space-y-3">
+                {metadata.education.map((e, i) => (
+                  <Card key={i}>
+                    <p className="font-semibold">{e.degree}</p>
+                    <p className="text-sm opacity-70">{e.institution}</p>
+                    <p className="text-sm opacity-60">{e.year}</p>
+                  </Card>
+                ))}
+              </div>
+            </Section>
+          )}
 
-              {/* Work Experience */}
-              {metadata.work_experience &&
-                metadata.work_experience.length > 0 && (
-                  <div>
-                    <h3
-                      className={`text-xl font-bold mb-4 flex items-center gap-2 ${
-                        darkMode ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      <Briefcase
-                        size={24}
-                        className={
-                          darkMode ? "text-green-400" : "text-green-600"
-                        }
-                      />
-                      Work Experience
-                    </h3>
-                    <div className="space-y-3">
-                      {metadata.work_experience.map((exp, idx) => (
-                        <div
-                          key={idx}
-                          className={`p-5 rounded-xl border transition-all duration-300 hover:scale-102 ${
-                            darkMode
-                              ? "bg-slate-700/30 border-slate-600/50"
-                              : "bg-green-50/50 border-green-100/50"
-                          }`}
-                        >
-                          <p
-                            className={`font-bold text-lg ${
-                              darkMode ? "text-white" : "text-slate-900"
-                            }`}
-                          >
-                            {exp.title}
-                          </p>
-                          <p
-                            className={`text-sm font-semibold ${
-                              darkMode ? "text-green-300" : "text-green-600"
-                            }`}
-                          >
-                            {exp.company}
-                          </p>
-                          {exp.years && (
-                            <p
-                              className={`text-sm ${
-                                darkMode ? "text-slate-400" : "text-slate-600"
-                              }`}
-                            >
-                              {exp.years} years
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+          {/* EXPERIENCE */}
+          {metadata.work_experience?.length > 0 && (
+            <Section title="Work Experience">
+              <div className="space-y-3">
+                {metadata.work_experience.map((e, i) => (
+                  <Card key={i}>
+                    <p className="font-semibold">{e.title}</p>
+                    <p className="text-sm text-[#6E4B2C]/70">{e.company}</p>
+                    {e.years && (
+                      <p className="text-sm opacity-60">{e.years} years</p>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            </Section>
+          )}
 
-              {/* Certifications */}
-              {metadata.certifications &&
-                metadata.certifications.length > 0 && (
-                  <div>
-                    <h3
-                      className={`text-xl font-bold mb-4 flex items-center gap-2 ${
-                        darkMode ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      <Award
-                        size={24}
-                        className={
-                          darkMode ? "text-yellow-400" : "text-yellow-600"
-                        }
-                      />
-                      Certifications
-                    </h3>
-                    <div className="space-y-2">
-                      {metadata.certifications.map((cert, idx) => (
-                        <div
-                          key={idx}
-                          className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-300 ${
-                            darkMode
-                              ? "hover:bg-slate-700/30"
-                              : "hover:bg-yellow-50/50"
-                          }`}
-                        >
-                          <span
-                            className={`inline-block w-2 h-2 rounded-full ${
-                              darkMode ? "bg-yellow-400" : "bg-yellow-600"
-                            }`}
-                          ></span>
-                          <span
-                            className={`font-medium ${
-                              darkMode ? "text-slate-300" : "text-slate-700"
-                            }`}
-                          >
-                            {cert}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-            </div>
+          {/* CERTIFICATIONS */}
+          {metadata.certifications?.length > 0 && (
+            <Section title="Certifications">
+              {metadata.certifications.map((c, i) => (
+                <Tag key={i}>{c}</Tag>
+              ))}
+            </Section>
           )}
         </div>
       </main>
     </div>
   );
-};
+}
 
-export default CandidateDetailsPage;
+/* ================= UI HELPERS ================= */
+
+const Section = ({ title, children }) => (
+  <section>
+    <h3 className="text-xl font-bold text-[#6E4B2C] mb-4">{title}</h3>
+    <div className="flex flex-wrap gap-3">{children}</div>
+  </section>
+);
+
+const Tag = ({ children }) => (
+  <span
+    className="px-4 py-2 rounded-xl text-sm font-semibold"
+    style={{ background: "#EFE7DA", color: "#6E4B2C" }}
+  >
+    {children}
+  </span>
+);
+
+const Card = ({ children }) => (
+  <div
+    className="p-4 rounded-2xl"
+    style={{ background: "#F8F4EC", border: "1px solid #E3D7C7" }}
+  >
+    {children}
+  </div>
+);

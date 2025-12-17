@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 
 export const GitHubCallbackPage = () => {
   const [error, setError] = useState("");
@@ -19,12 +20,9 @@ export const GitHubCallbackPage = () => {
         }
 
         // Send code to backend
-        const response = await axios.post(
-          `${window.API_BASE_URL}/api/auth/github/`,
-          {
-            code: code,
-          }
-        );
+        const response = await axios.post(`${API_BASE_URL}/api/auth/github/`, {
+          code: code,
+        });
 
         if (response.status === 200) {
           // Save user data
@@ -54,26 +52,34 @@ export const GitHubCallbackPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8">
-        {loading ? (
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-            <p className="mt-4 text-lg text-gray-700">
-              Authenticating with GitHub...
-            </p>
-          </div>
-        ) : error ? (
-          <div className="text-center">
-            <p className="text-red-600">{error}</p>
-          </div>
-        ) : (
-          <div className="text-center">
-            <p className="text-green-600">
-              Authentication successful! Redirecting...
-            </p>
-          </div>
-        )}
+    <div className="app-shell">
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="max-w-md w-full space-y-8 p-8">
+          {loading ? (
+            <div className="text-center">
+              <div
+                className="inline-block animate-spin rounded-full h-12 w-12 border-b-2"
+                style={{ borderBottomColor: "var(--primary-color)" }}
+              ></div>
+              <p
+                className="mt-4 text-lg"
+                style={{ color: "var(--text-color)" }}
+              >
+                Authenticating with GitHub...
+              </p>
+            </div>
+          ) : error ? (
+            <div className="text-center">
+              <p style={{ color: "rgba(185, 28, 28, 1)" }}>{error}</p>
+            </div>
+          ) : (
+            <div className="text-center">
+              <p style={{ color: "rgba(21, 128, 61, 1)" }}>
+                Authentication successful! Redirecting...
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

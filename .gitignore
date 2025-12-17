@@ -47,3 +47,5 @@ htmlcov/
 # Misc
 tempCodeRunnerFile.bat
 *.bak
+.node_modules
+.venv
