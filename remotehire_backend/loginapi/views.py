@@ -1503,13 +1503,20 @@ def deepfake_check(request):
 
         # Primary: use the trained deepfake model (deepfakemodel/best_model.pt) if available
         try:
-            from deepfakemodel.inference import DeepfakeInference
+            import sys
             import tempfile
+            from django.conf import settings
 
-            model_path = str(Path(__file__).resolve().parents[1] / 'deepfakemodel' / 'best_model.pt')
-            # Fallback to project folder path if above fails
-            if not Path(model_path).exists():
-                model_path = str(Path('deepfakemodel') / 'best_model.pt')
+            # Ensure project root is on path so deepfakemodel package can be imported
+            project_root = Path(settings.BASE_DIR).parent  # one level up from remotehire_backend
+            if str(project_root) not in sys.path:
+                sys.path.append(str(project_root))
+
+            from deepfakemodel.inference import DeepfakeInference
+
+            model_path = project_root / 'deepfakemodel' / 'best_model.pt'
+            if not model_path.exists():
+                raise FileNotFoundError(f"Deepfake model not found at {model_path}")
 
             # Write uploaded image to temp file
             with tempfile.NamedTemporaryFile(delete=True, suffix='.jpg') as tmp:
@@ -1517,7 +1524,7 @@ def deepfake_check(request):
                 tmp.flush()
 
                 try:
-                    inference = DeepfakeInference(model_path, device='cpu')
+                    inference = DeepfakeInference(str(model_path), device='cpu')
                 except Exception as e:
                     print(f"[DEEPFAKE_CHECK] Model load failed: {e}")
                     raise

@@ -32,10 +32,6 @@ export default function CandidateDetailsPage() {
 
   /* ================= FETCH ================= */
   useEffect(() => {
-    localStorage.setItem("darkMode", darkMode);
-  }, [darkMode]);
-
-  useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {

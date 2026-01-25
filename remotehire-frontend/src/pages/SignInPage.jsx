@@ -391,18 +391,10 @@ export const SignInPage = () => {
                   style={{ background: "var(--border-stronger)" }}
                 />
               </div>
-              <h1
-                className={`text-4xl font-bold mb-2 ${
-                  darkMode ? "text-white" : "text-slate-900"
-                }`}
-              >
+              <h1 className="text-4xl font-bold mb-2 text-slate-900">
                 Welcome Back
               </h1>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-slate-400" : "text-slate-600"
-                }`}
-              >
+              <p className="text-sm text-slate-600">
                 Sign in to your RemoteHire.io account
               </p>
             </div>
@@ -488,27 +480,14 @@ export const SignInPage = () => {
                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.475-2.236-1.986-2.236-1.081 0-1.722.731-2.004 1.438-.103.25-.129.599-.129.948v5.419h-3.554s.05-8.736 0-9.646h3.554v1.364c.425-.654 1.185-1.586 2.882-1.586 2.105 0 3.684 1.375 3.684 4.331v5.537zM5.337 8.855c-1.144 0-1.915-.758-1.915-1.706 0-.951.77-1.706 1.959-1.706 1.188 0 1.915.755 1.938 1.706 0 .948-.75 1.706-1.982 1.706zm1.581 11.597H3.715V9.806h3.203v10.646zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z" />
                   </svg>
                 </button>
-              </form>
 
               {/* Divider */}
               <div className="flex items-center gap-4">
-                <div
-                  className={`flex-1 h-px ${
-                    darkMode ? "bg-slate-700/30" : "bg-blue-100/50"
-                  }`}
-                ></div>
-                <span
-                  className={`text-xs font-semibold uppercase tracking-wide ${
-                    darkMode ? "text-slate-400" : "text-slate-500"
-                  }`}
-                >
+                <div className="flex-1 h-px bg-blue-100/50"></div>
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Or continue with
                 </span>
-                <div
-                  className={`flex-1 h-px ${
-                    darkMode ? "bg-slate-700/30" : "bg-blue-100/50"
-                  }`}
-                ></div>
+                <div className="flex-1 h-px bg-blue-100/50"></div>
               </div>
             </div>
 

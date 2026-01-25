@@ -17,7 +17,7 @@ const theme = {
 };
 
 /* ================= COMPONENT ================= */
-export default function RecruiterCandidatesPage() {
+export default function RecruiterCandidatesPage({ darkMode }) {
   const token = localStorage.getItem("token");
 
   const [candidates, setCandidates] = useState([]);
@@ -37,9 +37,6 @@ export default function RecruiterCandidatesPage() {
   const [message, setMessage] = useState("");
 
   /* ================= FETCH ================= */
-  useEffect(() => {
-    localStorage.setItem("darkMode", darkMode);
-  }, [darkMode]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");

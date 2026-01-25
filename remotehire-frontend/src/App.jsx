@@ -131,7 +131,7 @@ export const App = () => {
       page = <CandidateInterviewsPage />;
       break;
     case currentPath === "/recruiter-candidates":
-      page = <RecruiterCandidatesPage />;
+      page = <RecruiterCandidatesPage darkMode={darkMode} />;
       break;
     case currentPath === "/recruiter-interviews":
       page = <RecruiterInterviewsPage />;

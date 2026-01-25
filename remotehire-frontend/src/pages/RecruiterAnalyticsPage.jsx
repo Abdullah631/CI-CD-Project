@@ -94,7 +94,7 @@ export default function RecruiterAnalyticsPage() {
     metrics: [],
   };
 
-  const displayData = analyticsData || defaultAnalyticsData;
+  const displayData = data;
 
   return (
     <div

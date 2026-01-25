@@ -9,6 +9,7 @@ from .views import recruiter_dashboard_stats, recruiter_job_applicants, recruite
 from .views import google_oauth, github_oauth, linkedin_oauth
 from .views import candidate_profile, upload_cv, get_cv_metadata, download_cv, view_cv, delete_cv
 from .views import recruiter_analytics
+from .views import request_password_reset, reset_password
 
 urlpatterns = [
     path('register/', register_user, name='register_user'),
