@@ -1501,7 +1501,71 @@ def deepfake_check(request):
         # Read bytes
         img_bytes = img_file.read()
 
-        # Primary: use the trained deepfake model (deepfakemodel/best_model.pt) if available
+        # Primary: Call the Hugging Face Space API for deepfake detection
+        try:
+            from gradio_client import Client
+            import base64
+            import tempfile
+            import os
+
+            print(f"[DEEPFAKE_CHECK] Using Hugging Face Space API for deepfake detection")
+
+            # Write uploaded image to temp file for Gradio client
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
+                tmp.write(img_bytes)
+                tmp_path = tmp.name
+
+            try:
+                # Connect to the Hugging Face Space
+                # Space URL: https://huggingface.co/spaces/Abdullah7731/remotehire-deepfake-demo
+                client = Client("Abdullah7731/remotehire-deepfake-demo")
+                
+                # Call the predict_image function (first endpoint)
+                result = client.predict(
+                    image=tmp_path,
+                    api_name="/predict"
+                )
+                
+                print(f"[DEEPFAKE_CHECK] HuggingFace result: {result}")
+
+                # Parse the result from Gradio
+                if isinstance(result, dict):
+                    pred = result.get('Prediction', '').upper()
+                    confidence_str = result.get('Confidence', '0%')
+                    # Parse confidence from "98.50%" format
+                    confidence = float(confidence_str.replace('%', '')) if '%' in str(confidence_str) else float(confidence_str) * 100
+                    
+                    verdict = 'real' if pred == 'REAL' else 'fake' if pred == 'FAKE' else 'unknown'
+                    
+                    return Response({
+                        'verdict': verdict,
+                        'confidence': round(confidence, 2),
+                        'probabilities': {
+                            'REAL': result.get('Real Probability', '0%'),
+                            'FAKE': result.get('Fake Probability', '0%')
+                        },
+                        'source': 'huggingface_space',
+                        'raw': result
+                    }, status=status.HTTP_200_OK)
+                else:
+                    print(f"[DEEPFAKE_CHECK] Unexpected result format: {type(result)}")
+                    raise ValueError("Unexpected response format from Hugging Face")
+
+            finally:
+                # Clean up temp file
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+
+        except ImportError:
+            print("[DEEPFAKE_CHECK] gradio_client not installed, trying local model")
+            # Fall back to local model if gradio_client not available
+            pass
+        except Exception as e:
+            print(f"[DEEPFAKE_CHECK] HuggingFace API error: {str(e)}")
+            # Fall back to local model or heuristics
+            pass
+
+        # Fallback: Try local model if HuggingFace API fails
         try:
             import sys
             import tempfile
@@ -1542,11 +1606,13 @@ def deepfake_check(request):
                     'verdict': verdict,
                     'confidence': round(confidence, 2),
                     'probabilities': result.get('probabilities', {}),
+                    'source': 'local_model',
                     'raw': result
                 }, status=status.HTTP_200_OK)
 
-        except Exception:
-            # If model integration fails, fall back to earlier heuristics (face_recognition/OpenCV)
+        except Exception as local_model_error:
+            print(f"[DEEPFAKE_CHECK] Local model also failed: {local_model_error}")
+            # If local model also fails, fall back to earlier heuristics (face_recognition/OpenCV)
             pass
 
         # --- fallback heuristics (face_recognition or OpenCV) ---

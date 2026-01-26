@@ -19,3 +19,4 @@ pypdf
 psycopg2-binary
 boto3
 django-storages
+gradio_client
