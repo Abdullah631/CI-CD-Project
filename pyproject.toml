@@ -1,3 +1,9 @@
+[project]
+name = "remotehire-backend"
+version = "1.0.0"
+description = "RemoteHire.io Backend API"
+requires-python = ">=3.11"
+
 [tool.black]
 line-length = 100
 target-version = ['py311']

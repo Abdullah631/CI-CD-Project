@@ -190,12 +190,15 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000',
     'http://192.168.100.12:5173',
     'http://192.168.100.12:8000',
+    'https://remotehire-io-1.onrender.com',  # Render backend
+    'https://remotehire-io-frontend.onrender.com',  # Render frontend (when deployed)
 ]
 
 CORS_ALLOW_CREDENTIALS = True
-# During local development allow all origins to simplify testing.
-# Remove or change this in production.
-CORS_ALLOW_ALL_ORIGINS = True
+
+# In production, use specific origins list above
+# In development, allow all origins for testing simplicity
+CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all origins in DEBUG mode
 
 # Email settings
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
