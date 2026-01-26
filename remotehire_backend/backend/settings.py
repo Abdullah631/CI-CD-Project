@@ -43,6 +43,10 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:5173')
 PASSWORD_RESET_TOKEN_EXPIRY_HOURS = int(os.getenv('PASSWORD_RESET_TOKEN_EXPIRY_HOURS', '1'))
 
+# Hugging Face Space / Token Configuration
+HUGGINGFACE_SPACE_ID = os.getenv('HUGGINGFACE_SPACE_ID', 'Abdullah7731/remotehire-deepfake-demo')
+HUGGINGFACE_API_TOKEN = os.getenv('HUGGINGFACE_API_TOKEN')
+
 
 # Application definition
 
@@ -193,6 +197,11 @@ CORS_ALLOWED_ORIGINS = [
     'https://remotehire-io-1.onrender.com',  # Render backend
     'https://remotehire-io-frontend.onrender.com',  # Render frontend (when deployed)
     'https://remote-hire-io.vercel.app',  # Vercel frontend
+]
+
+# Allow Vercel preview deployments via regex
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://remote-hire-io-.*\.vercel\.app$'
 ]
 
 CORS_ALLOW_CREDENTIALS = True

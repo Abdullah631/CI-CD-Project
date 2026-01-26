@@ -1472,9 +1472,13 @@ def get_interview_signals(request, interview_id):
 @api_view(['POST'])
 @csrf_exempt
 def deepfake_check(request):
-    """Accept an image (multipart/form-data) and return a placeholder deepfake result.
-    This is a minimal endpoint to avoid 404s while a real model is integrated.
-    Expects: 'image' file and optional 'interview_id' field.
+    """Accept an image (multipart/form-data) and perform deepfake detection.
+    Flow:
+    - Reads `image` and `interview_id`.
+    - Tries Hugging Face Space via gradio_client with robust endpoint discovery.
+    - Falls back to local model (deepfakemodel/inference.py) if present.
+    - Finally falls back to heuristics using face_recognition or OpenCV.
+    Returns normalized JSON: {verdict, confidence, probabilities?, source}.
     """
     user, err = _get_user_from_bearer(request)
     if err:
@@ -1507,6 +1511,8 @@ def deepfake_check(request):
             import base64
             import tempfile
             import os
+            import json
+            from django.conf import settings as dj_settings
 
             print(f"[DEEPFAKE_CHECK] Using Hugging Face Space API for deepfake detection")
 
@@ -1516,40 +1522,150 @@ def deepfake_check(request):
                 tmp_path = tmp.name
 
             try:
-                # Connect to the Hugging Face Space
-                # Space URL: https://huggingface.co/spaces/Abdullah7731/remotehire-deepfake-demo
-                client = Client("Abdullah7731/remotehire-deepfake-demo")
-                
-                # Call the predict_image function (first endpoint)
-                result = client.predict(
-                    image=tmp_path,
-                    api_name="/predict"
-                )
-                
+                # Connect to the Hugging Face Space using settings (with optional token)
+                space_id = getattr(dj_settings, 'HUGGINGFACE_SPACE_ID', 'Abdullah7731/remotehire-deepfake-demo')
+                hf_token = getattr(dj_settings, 'HUGGINGFACE_API_TOKEN', None)
+                kwargs = {}
+                if hf_token:
+                    kwargs['hf_token'] = hf_token
+                client = Client(space_id, **kwargs)
+
+                # Discover available API endpoints and input parameter names
+                try:
+                    api_view = client.view_api()
+                    print(f"[DEEPFAKE_CHECK] Space API view: {api_view}")
+                except Exception as e_view:
+                    print(f"[DEEPFAKE_CHECK] view_api() failed: {e_view}")
+                    api_view = None
+
+                candidate_api_names = ["/predict", "/predict_image", "/classify"]
+                candidate_param_keys = ["image", "img", "input_image", "filepath"]
+
+                # If we have api_view, try to extract api_name and parameter keys
+                discovered = []
+                if isinstance(api_view, dict):
+                    try:
+                        endpoints = api_view.get('endpoints') or api_view.get('named_endpoints') or []
+                        if isinstance(endpoints, dict):
+                            for name, info in endpoints.items():
+                                discovered.append({
+                                    'api_name': name,
+                                    'info': info,
+                                    'fn_index': (info or {}).get('fn_index')
+                                })
+                        elif isinstance(endpoints, list):
+                            for ep in endpoints:
+                                discovered.append({
+                                    'api_name': ep.get('api_name'),
+                                    'info': ep,
+                                    'fn_index': ep.get('fn_index')
+                                })
+                        print(f"[DEEPFAKE_CHECK] Discovered endpoints: {discovered}")
+                        # Merge discovered api_names into candidates
+                        candidate_api_names = list({n for n in candidate_api_names + [d.get('api_name') for d in discovered if d.get('api_name')]})
+                    except Exception as e_disc:
+                        print(f"[DEEPFAKE_CHECK] Failed to parse endpoints: {e_disc}")
+
+                # Try calling by api_name with different parameter keys
+                result = None
+                last_err = None
+                for api_name in candidate_api_names:
+                    if not api_name:
+                        continue
+                    for key in candidate_param_keys:
+                        try:
+                            print(f"[DEEPFAKE_CHECK] Trying api_name={api_name} with param key '{key}'")
+                            result = client.predict(**{key: tmp_path}, api_name=api_name)
+                            print(f"[DEEPFAKE_CHECK] Success via {api_name}/{key}: {result}")
+                            last_err = None
+                            break
+                        except Exception as e_call:
+                            last_err = e_call
+                            # Continue trying other param keys
+                    if result is not None:
+                        break
+
+                # If api_name attempts failed, try fn_index fallback using view_api data
+                if result is None and discovered:
+                    for ep in discovered:
+                        fn_idx = ep.get('fn_index')
+                        if fn_idx is None:
+                            continue
+                        # Try calling predict by fn_index, with typical signatures
+                        try:
+                            print(f"[DEEPFAKE_CHECK] Trying fn_index={fn_idx}")
+                            # Some Spaces expect file path as first positional arg, others as keyword
+                            try:
+                                result = client.predict(tmp_path, fn_index=fn_idx)
+                            except Exception:
+                                # Try common keyword names
+                                for key in candidate_param_keys:
+                                    try:
+                                        result = client.predict(**{key: tmp_path}, fn_index=fn_idx)
+                                        break
+                                    except Exception:
+                                        pass
+                            if result is not None:
+                                print(f"[DEEPFAKE_CHECK] Success via fn_index={fn_idx}: {result}")
+                                break
+                        except Exception as e_fn:
+                            last_err = e_fn
+
+                if result is None and last_err is not None:
+                    print(f"[DEEPFAKE_CHECK] HuggingFace attempts failed: {last_err}")
+                    raise last_err
+
                 print(f"[DEEPFAKE_CHECK] HuggingFace result: {result}")
 
-                # Parse the result from Gradio
+                # Normalize Space responses
+                verdict = 'unknown'
+                confidence = 0.0
+                probabilities = {}
+
                 if isinstance(result, dict):
-                    pred = result.get('Prediction', '').upper()
-                    confidence_str = result.get('Confidence', '0%')
-                    # Parse confidence from "98.50%" format
-                    confidence = float(confidence_str.replace('%', '')) if '%' in str(confidence_str) else float(confidence_str) * 100
-                    
+                    # Common dict outputs
+                    pred_raw = result.get('Prediction') or result.get('prediction') or result.get('label') or result.get('verdict')
+                    pred = str(pred_raw or '').strip().upper()
+                    conf_raw = result.get('Confidence') or result.get('confidence') or result.get('score')
+                    if isinstance(conf_raw, str) and conf_raw.endswith('%'):
+                        try:
+                            confidence = float(conf_raw.replace('%', ''))
+                        except Exception:
+                            confidence = 0.0
+                    elif conf_raw is not None:
+                        try:
+                            # Assume 0-1 range, convert to percentage if <=1
+                            val = float(conf_raw)
+                            confidence = val * 100 if val <= 1 else val
+                        except Exception:
+                            confidence = 0.0
+                    # probabilities keys may vary
+                    probabilities = result.get('probabilities') or {
+                        'REAL': result.get('Real Probability'),
+                        'FAKE': result.get('Fake Probability'),
+                    }
                     verdict = 'real' if pred == 'REAL' else 'fake' if pred == 'FAKE' else 'unknown'
-                    
-                    return Response({
-                        'verdict': verdict,
-                        'confidence': round(confidence, 2),
-                        'probabilities': {
-                            'REAL': result.get('Real Probability', '0%'),
-                            'FAKE': result.get('Fake Probability', '0%')
-                        },
-                        'source': 'huggingface_space',
-                        'raw': result
-                    }, status=status.HTTP_200_OK)
-                else:
-                    print(f"[DEEPFAKE_CHECK] Unexpected result format: {type(result)}")
-                    raise ValueError("Unexpected response format from Hugging Face")
+                elif isinstance(result, (list, tuple)) and result:
+                    # Some Spaces return [label, confidence] or similar
+                    try:
+                        label = str(result[0]).upper()
+                        val = float(result[1])
+                        confidence = val * 100 if val <= 1 else val
+                        verdict = 'real' if label == 'REAL' else 'fake' if label == 'FAKE' else 'unknown'
+                    except Exception:
+                        pass
+                elif isinstance(result, str):
+                    # Result may be a simple label
+                    lab = result.strip().upper()
+                    verdict = 'real' if lab == 'REAL' else 'fake' if lab == 'FAKE' else 'unknown'
+
+                return Response({
+                    'verdict': verdict,
+                    'confidence': float(round(confidence, 2)),
+                    'probabilities': probabilities or {},
+                    'source': 'huggingface_space',
+                    'raw': result
+                }, status=status.HTTP_200_OK)
 
             finally:
                 # Clean up temp file
