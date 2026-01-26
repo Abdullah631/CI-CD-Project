@@ -1,0 +1,29 @@
+# CODEOWNERS file for RemoteHire.io
+# This file defines code ownership for branch protection and code review routing
+
+# Backend
+remotehire_backend/ @BSEF22M546 @BSEF22M505
+remotehire_backend/loginapi/ @BSEF22M546
+remotehire_backend/backend/settings.py @BSEF22M546 @BSEF22M505
+
+# Frontend
+remotehire-frontend/ @BSEF22M505 @BSEF22M546
+remotehire-frontend/src/components/ @BSEF22M505
+remotehire-frontend/src/pages/ @BSEF22M505
+
+# AI/ML Model
+deepfakemodel/ @BSEF22M546
+deepfakemodel/train_model.py @BSEF22M546
+deepfakemodel/inference.py @BSEF22M546
+
+# CI/CD Configuration
+.github/ @BSEF22M546 @BSEF22M505
+docker-compose*.yml @BSEF22M546 @BSEF22M505
+
+# Documentation
+*.md @BSEF22M546 @BSEF22M505
+
+# Configuration files
+.env* @BSEF22M546 @BSEF22M505
+pytest.ini @BSEF22M546
+pyproject.toml @BSEF22M546 @BSEF22M505

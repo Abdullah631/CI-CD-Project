@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: remotehire_postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-remotehire_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Django Backend
+  backend:
+    build:
+      context: ./remotehire_backend
+      dockerfile: Dockerfile
+    container_name: remotehire_backend
+    environment:
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: ${DB_NAME:-remotehire_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DEBUG: "True"
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-here}
+      ALLOWED_HOSTS: localhost,127.0.0.1,backend,0.0.0.0
+      USE_S3: "False"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./remotehire_backend:/app
+      - media_data:/app/media
+    command: python manage.py runserver 0.0.0.0:8000
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./remotehire-frontend
+      dockerfile: Dockerfile
+    container_name: remotehire_frontend
+    environment:
+      VITE_API_URL: http://backend:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./remotehire-frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  media_data:
+
+networks:
+  default:
+    name: remotehire_network
