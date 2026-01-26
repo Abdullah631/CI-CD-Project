@@ -9,7 +9,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}-frontend
+  IMAGE_NAME: ${{ toLower(format('{0}-frontend', github.repository)) }}
   NODE_VERSION: '20.19.0'
 
 jobs:
