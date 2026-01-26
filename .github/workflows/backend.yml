@@ -51,7 +51,7 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-django
+          pip install pytest pytest-django pytest-cov
           pip install -r remotehire_backend/requirements.txt
 
       - name: Run tests (sqlite)
