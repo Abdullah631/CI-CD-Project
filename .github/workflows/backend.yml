@@ -1,270 +1,64 @@
-name: Backend CI/CD Pipeline
+name: Backend CI
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - main
-      - dev
-      - develop
+    branches: [main, dev]
     paths:
       - 'remotehire_backend/**'
       - '.github/workflows/backend.yml'
-      - 'docker-compose.yml'
   pull_request:
-    branches:
-      - main
-      - dev
+    branches: [main, dev]
     paths:
       - 'remotehire_backend/**'
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}-backend
   PYTHON_VERSION: '3.11'
 
 jobs:
-  # ===== LINTING & CODE QUALITY =====
   lint:
     runs-on: ubuntu-latest
-    name: Lint & Code Quality
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 black isort pylint
+          pip install flake8
           pip install -r remotehire_backend/requirements.txt
 
-      - name: Run Black formatter check
-        continue-on-error: true
-        run: black --check remotehire_backend/
+      - name: Run flake8
+        run: flake8 remotehire_backend --exclude=venv,__pycache__,.git
 
-      - name: Run isort import check
-        continue-on-error: true
-        run: isort --check-only remotehire_backend/
-
-      - name: Run Flake8 linter
-        run: |
-          flake8 remotehire_backend/ \
-            --count \
-            --select=E9,F63,F7,F82 \
-            --show-source \
-            --statistics
-
-  # ===== UNIT TESTS =====
   test:
     runs-on: ubuntu-latest
-    name: Unit Tests
     needs: lint
+    steps:
+      - uses: actions/checkout@v4
 
-    services:
-      postgres:
-        image: postgres:15
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-django
+          pip install -r remotehire_backend/requirements.txt
+
+      - name: Run tests (sqlite)
         env:
-          POSTGRES_DB: test_remotehire
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest pytest-django pytest-cov
-          pip install -r remotehire_backend/requirements.txt
-
-      - name: Create test .env file
-        run: |
-          cat > remotehire_backend/.env.test << EOF
-          DB_ENGINE=django.db.backends.postgresql
-          DB_NAME=test_remotehire
-          DB_USER=test_user
-          DB_PASSWORD=test_password
-          DB_HOST=localhost
-          DB_PORT=5432
-          DEBUG=True
-          SECRET_KEY=test-secret-key-for-ci-cd
-          ALLOWED_HOSTS=localhost,127.0.0.1
-          USE_S3=False
-          EOF
-
-      - name: Run migrations
+          USE_POSTGRES: 'False'
+          SECRET_KEY: test-ci-key
+          DEBUG: 'True'
         run: |
           cd remotehire_backend
-          python manage.py migrate
-
-      - name: Run pytest
-        run: |
-          cd remotehire_backend
-          pytest --cov=. --cov-report=xml --cov-report=html
-
-      - name: Upload coverage reports
-        if: always()
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./remotehire_backend/coverage.xml
-          flags: backend
-          name: backend-coverage
-
-  # ===== SECURITY SCANNING =====
-  security:
-    runs-on: ubuntu-latest
-    name: Security Scan
-    needs: lint
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install safety bandit
-          pip install -r remotehire_backend/requirements.txt
-
-      - name: Run Safety check
-        continue-on-error: true
-        run: safety check --json
-
-      - name: Run Bandit security check
-        run: bandit -r remotehire_backend/ -f json -o bandit-report.json || true
-
-      - name: Upload Bandit report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: bandit-security-report
-          path: bandit-report.json
-
-  # ===== DOCKER BUILD =====
-  build:
-    runs-on: ubuntu-latest
-    name: Build Docker Image
-    needs: [lint, test, security]
-    if: success()
-
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Log in to Container Registry
-        if: github.event_name == 'push'
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}-
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: ./remotehire_backend
-          push: ${{ github.event_name == 'push' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
-
-  # ===== DEPLOYMENT (Optional) =====
-  deploy-staging:
-    runs-on: ubuntu-latest
-    name: Deploy to Staging
-    needs: build
-    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy to staging environment
-        run: |
-          echo "Deploying backend to staging..."
-          # Add your staging deployment commands here
-          # Example: AWS ECS, Heroku, or custom deployment
-          
-      - name: Run smoke tests
-        run: |
-          echo "Running smoke tests on staging..."
-          # curl -f http://staging-api.remotehire.io/health || exit 1
-
-      - name: Notify deployment
-        if: success()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '✅ Backend deployed to staging'
-            })
-
-  deploy-production:
-    runs-on: ubuntu-latest
-    name: Deploy to Production
-    needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy to production environment
-        run: |
-          echo "Deploying backend to production..."
-          # Add your production deployment commands here
-          # Example: AWS ECS, Kubernetes, or custom deployment
-
-      - name: Create deployment record
-        uses: chrnorm/deployment-action@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          environment: production
-          production-environment: true
-
-      - name: Health check
-        run: |
-          echo "Checking production health..."
-          # curl -f https://api.remotehire.io/health || exit 1
+          pytest
