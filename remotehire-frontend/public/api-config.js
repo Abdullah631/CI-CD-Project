@@ -12,12 +12,15 @@ window.API_BASE_URL = (() => {
   } else if (window.location.hostname.includes("onrender.com")) {
     // Render deployment - use Render backend
     return "https://remotehire-io-1.onrender.com";
+  } else if (window.location.hostname.includes("vercel.app")) {
+    // Vercel deployment - use Render backend
+    return "https://remotehire-io-1.onrender.com";
   } else if (window.location.hostname.includes("azurewebsites.net")) {
     // Azure deployment
     return `https://${window.location.hostname.replace("-frontend", "-backend")}.azurewebsites.net`;
   } else {
-    // Fallback for other deployments
-    return `https://${window.location.hostname}`;
+    // Fallback for other deployments - use Render
+    return "https://remotehire-io-1.onrender.com";
   }
 })();
 

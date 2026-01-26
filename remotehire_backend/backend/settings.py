@@ -192,6 +192,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://192.168.100.12:8000',
     'https://remotehire-io-1.onrender.com',  # Render backend
     'https://remotehire-io-frontend.onrender.com',  # Render frontend (when deployed)
+    'https://remote-hire-io.vercel.app',  # Vercel frontend
 ]
 
 CORS_ALLOW_CREDENTIALS = True
