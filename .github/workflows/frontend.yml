@@ -1,25 +1,16 @@
 name: Frontend CI/CD Pipeline
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
       - dev
-      - develop
-    paths:
-      - 'remotehire-frontend/**'
-      - '.github/workflows/frontend.yml'
-  pull_request:
-    branches:
-      - main
-      - dev
-    paths:
-      - 'remotehire-frontend/**'
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}-frontend
-  NODE_VERSION: '18'
+  NODE_VERSION: '20.19.0'
 
 jobs:
   # ===== LINTING & CODE QUALITY =====
@@ -172,7 +163,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: frontend-build
           path: remotehire-frontend/dist/
@@ -240,7 +231,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: frontend-build
           path: remotehire-frontend/dist/
