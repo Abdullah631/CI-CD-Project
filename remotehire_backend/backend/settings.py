@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-bbg1h*0%j1%*c@z^z33@13zg5q$2ija(ea@^r8iu9w=*+)tkwq')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = False  # Always False on Render to reduce memory footprint
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,192.168.100.12,remotehire-io-1.onrender.com').split(',')
 
@@ -107,6 +107,11 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD'),
         'HOST': os.getenv('DB_HOST'),
         'PORT': os.getenv('DB_PORT', '5432'),
+        'CONN_MAX_AGE': 600,  # Connection pooling: reuse connections for 10 minutes
+        'OPTIONS': {
+            'connect_timeout': 10,  # Fail fast if DB doesn't respond
+            'options': '-c statement_timeout=30000'  # 30s statement timeout
+        }
     }
 }
 

@@ -42,5 +42,7 @@ USER appuser
 # RUN python manage.py collectstatic --noinput || true
 
 # Run Gunicorn with minimal footprint for Render free tier
-# 1 worker, 2 threads, shorter timeout, recycle to avoid leaks
-CMD ["gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "2", "--timeout", "120", "--keep-alive", "5", "--max-requests", "200", "--max-requests-jitter", "50", "--graceful-timeout", "30"]
+# Single worker, single threaded for memory safety
+# Short timeout to fail fast on DB hangs
+# Aggressive recycling to prevent memory leaks
+CMD ["gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "1", "--timeout", "60", "--keep-alive", "5", "--max-requests", "100", "--max-requests-jitter", "20", "--graceful-timeout", "15"]
