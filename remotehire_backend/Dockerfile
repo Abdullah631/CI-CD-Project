@@ -38,12 +38,8 @@ RUN useradd -m -u 1000 appuser && \
 
 USER appuser
 
-# Collect static files (will use default if USE_S3=False)
-RUN python manage.py collectstatic --noinput || true
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')" || exit 1
+# Skip collectstatic to save memory on Render free tier (S3 not being used anyway)
+# RUN python manage.py collectstatic --noinput || true
 
 # Run Gunicorn with minimal footprint for Render free tier
 # 1 worker, 2 threads, shorter timeout, recycle to avoid leaks
