@@ -30,7 +30,13 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-bbg1h*0%j1%*c@z^z33@13zg5q
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False  # Always False on Render to reduce memory footprint
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,192.168.100.12,remotehire-io-1.onrender.com').split(',')
+# Parse ALLOWED_HOSTS from env and add Vercel domains
+_allowed = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,192.168.100.12,remotehire-io-1.onrender.com').split(',')
+ALLOWED_HOSTS = [host.strip() for host in _allowed] + [
+    'remotehire-amber.vercel.app',
+    'remote-hire-io.vercel.app',
+    '.vercel.app',  # Allow all Vercel preview deployments
+]
 
 # Google OAuth Configuration
 GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
