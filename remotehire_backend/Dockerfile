@@ -45,5 +45,6 @@ RUN python manage.py collectstatic --noinput || true
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')" || exit 1
 
-# Run Gunicorn with minimal workers to reduce memory usage on Render free tier
-CMD ["gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "4", "--timeout", "180", "--keep-alive", "5"]
+# Run Gunicorn with minimal footprint for Render free tier
+# 1 worker, 2 threads, shorter timeout, recycle to avoid leaks
+CMD ["gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "2", "--timeout", "120", "--keep-alive", "5", "--max-requests", "200", "--max-requests-jitter", "50", "--graceful-timeout", "30"]
