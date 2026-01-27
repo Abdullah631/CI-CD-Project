@@ -25,12 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-bbg1h*0%j1%*c@z^z33@13zg5q$2ija(ea@^r8iu9w=*+)tkwq'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-bbg1h*0%j1%*c@z^z33@13zg5q$2ija(ea@^r8iu9w=*+)tkwq')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost','*','192.168.100.12']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,192.168.100.12,remotehire-io-1.onrender.com').split(',')
 
 # Google OAuth Configuration
 GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
@@ -194,21 +194,20 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000',
     'http://192.168.100.12:5173',
     'http://192.168.100.12:8000',
-    'https://remotehire-io-1.onrender.com',  # Render backend
-    'https://remotehire-io-frontend.onrender.com',  # Render frontend (when deployed)
-    'https://remote-hire-io.vercel.app',  # Vercel frontend
+    'https://remotehire-io-1.onrender.com',
+    'https://remote-hire-io.vercel.app',
 ]
 
 # Allow Vercel preview deployments via regex
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r'^https://remote-hire-io-.*\.vercel\.app$'
+    r'^https://remote-hire-io.*\.vercel\.app$',
+    r'^https://.*vercel\.app$',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
-# In production, use specific origins list above
-# In development, allow all origins for testing simplicity
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only allow all origins in DEBUG mode
+# Allow all origins to avoid CORS blocks during testing and preview deployments
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Email settings
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')

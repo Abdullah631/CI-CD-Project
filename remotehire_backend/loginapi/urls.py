@@ -24,6 +24,7 @@ urlpatterns = [
     path('recruiter/jobs/<int:job_id>/applicants/', recruiter_job_applicants, name='recruiter_job_applicants'),
     path('recruiter/applicants/', recruiter_all_applicants, name='recruiter_all_applicants'),
     path('recruiter/applicants/recent/', recruiter_recent_applicants, name='recruiter_recent_applicants'),
+    path('recruiter/recent-applications/', recruiter_recent_applicants, name='recruiter_recent_applications_alias'),
     path('jobs/', public_jobs, name='public_jobs'),
     path('jobs/<int:job_id>/apply/', apply_job, name='apply_job'),
     # Interviews
