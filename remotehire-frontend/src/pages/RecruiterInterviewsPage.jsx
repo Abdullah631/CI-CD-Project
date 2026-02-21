@@ -1,47 +1,110 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import InsertChartIcon from "@mui/icons-material/InsertChart";
-import SearchIcon from "@mui/icons-material/Search";
-// icons: small chart and search icons for list and stats
+import {
+  Calendar,
+  Clock,
+  User,
+  Briefcase,
+  CheckCircle,
+  AlertCircle,
+  Search,
+  ChevronDown,
+} from "lucide-react";
 import RecruiterNav from "../components/RecruiterNav";
-import dashImg from "../assets/dash.jpg";
-import { API_BASE_URL } from "../config";
 
-/* ================= THEME ================= */
-const theme = {
-  sage: "#B7C7B1",
-  cinnamon: "#B87B4B",
-  sand: "#CDB08E",
-  cream: "#FBF6E6",
-  clay: "#6E4B2C",
-};
-
-/* ================= COMPONENT ================= */
-export default function RecruiterInterviewsPage() {
-  const token = localStorage.getItem("token");
-
+export const RecruiterInterviewsPage = () => {
   const [interviews, setInterviews] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [sortOrder, setSortOrder] = useState("upcoming");
-
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("darkMode") === "true"
+  );
+  const [userName, setUserName] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [currentTime, setCurrentTime] = useState(Date.now());
-  const notifiedRef = useRef(new Set());
+  const [notifiedInterviews, setNotifiedInterviews] = useState(new Set());
+  const notifiedRef = useRef(new Set()); // Track immediately to prevent duplicate notifications
 
-  /* ================= CLOCK ================= */
+  // Request notification permission
   useEffect(() => {
-    const t = setInterval(() => setCurrentTime(Date.now()), 1000);
-    return () => clearInterval(t);
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
   }, []);
 
-  /* ================= FETCH ================= */
   useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUserName(userData.username || "User");
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+  }, []);
+
+  // Check for upcoming interviews and send notifications
+  useEffect(() => {
+    if (!interviews.length) return;
+
+    const now = Date.now();
+    interviews.forEach((interview) => {
+      const interviewTime = new Date(interview.scheduled_at).getTime();
+      const timeDiff = interviewTime - now;
+      const minutes = Math.floor(timeDiff / (1000 * 60));
+
+      // Notify 5 minutes before and when interview starts
+      const shouldNotify =
+        (minutes === 5 || minutes === 0) &&
+        timeDiff > 0 &&
+        !notifiedRef.current.has(`${interview.id}-${minutes}`);
+
+      if (
+        shouldNotify &&
+        "Notification" in window &&
+        Notification.permission === "granted"
+      ) {
+        // Mark as notified immediately to prevent duplicates
+        notifiedRef.current.add(`${interview.id}-${minutes}`);
+        const title =
+          minutes === 5
+            ? "Interview Starting Soon!"
+            : "Interview Starting Now!";
+        const body =
+          minutes === 5
+            ? `Interview with ${interview.candidate_name} starts in 5 minutes!`
+            : `Interview with ${interview.candidate_name} is starting now!`;
+
+        new Notification(title, {
+          body,
+          icon: "/favicon.ico",
+          tag: `interview-${interview.id}`,
+          requireInteraction: true,
+        });
+
+        setNotifiedInterviews(
+          (prev) => new Set([...prev, `${interview.id}-${minutes}`])
+        );
+      }
+    });
+  }, [interviews, currentTime]); // Removed notifiedInterviews from dependencies
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
     const load = async () => {
       try {
-        setLoading(true);
         const res = await axios.get(
           `${API_BASE_URL}/api/interviews/recruiter/`,
           {
@@ -49,260 +112,438 @@ export default function RecruiterInterviewsPage() {
           }
         );
         setInterviews(res.data || []);
-        setError("");
       } catch (e) {
-        setError("Failed to load interviews");
-      } finally {
-        setLoading(false);
+        setError(e?.response?.data?.detail || "Failed to load interviews.");
       }
     };
-
     load();
-    const poll = setInterval(load, 30000);
-    return () => clearInterval(poll);
   }, []);
 
-  /* ================= NOTIFICATIONS ================= */
-  useEffect(() => {
-    if (!("Notification" in window) || Notification.permission !== "granted")
-      return;
+  const getCountdown = (scheduledAt) => {
+    const diff = new Date(scheduledAt).getTime() - currentTime;
+    if (diff <= 0) return "Interview time has passed";
 
-    interviews.forEach((iv) => {
-      const diff = new Date(iv.scheduled_at).getTime() - currentTime;
-      const mins = Math.floor(diff / 60000);
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-      if ((mins === 5 || mins === 0) && diff > 0) {
-        const key = `${iv.id}-${mins}`;
-        if (!notifiedRef.current.has(key)) {
-          notifiedRef.current.add(key);
-          new Notification(
-            mins === 5 ? "Interview soon" : "Interview starting",
-            {
-              body: `${iv.candidate_name} interview ${
-                mins === 5 ? "in 5 minutes" : "is starting now"
-              }`,
-            }
-          );
-        }
-      }
-    });
-  }, [interviews, currentTime]);
-
-  /* ================= HELPERS ================= */
-  const countdown = (time) => {
-    const diff = new Date(time).getTime() - currentTime;
-    if (diff <= 0) return "Started";
-    const m = Math.floor(diff / 60000);
-    const s = Math.floor((diff % 60000) / 1000);
-    return `${m}m ${s}s`;
+    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+    return `${minutes}m ${seconds}s`;
   };
 
-  const filtered = interviews
-    .filter((iv) => {
-      const s = search.toLowerCase();
-      const match =
-        iv.candidate_name?.toLowerCase().includes(s) ||
-        iv.job_title?.toLowerCase().includes(s);
-      const statusOk = filter === "all" || iv.status === filter;
-      return match && statusOk;
-    })
-    .sort((a, b) => {
-      const at = new Date(a.scheduled_at).getTime();
-      const bt = new Date(b.scheduled_at).getTime();
-      return sortOrder === "upcoming" ? at - bt : bt - at;
+  // Get upcoming interviews (within next 15 minutes)
+  const getUpcomingInterviews = () => {
+    const now = Date.now();
+    return interviews.filter((interview) => {
+      const interviewTime = new Date(interview.scheduled_at).getTime();
+      const timeDiff = interviewTime - now;
+      const minutes = Math.floor(timeDiff / (1000 * 60));
+      return minutes >= 0 && minutes <= 15;
     });
+  };
 
-  /* ================= STATS ================= */
+  const filteredInterviews = interviews.filter((interview) => {
+    const matchesSearch =
+      (interview.candidate_name || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      (interview.job_title || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+    const matchesFilter =
+      filterStatus === "all" || interview.status === filterStatus;
+    return matchesSearch && matchesFilter;
+  });
+
   const stats = [
     {
+      icon: Calendar,
       label: "Scheduled",
       value: interviews.filter((i) => i.status === "Scheduled").length,
+      color: "from-blue-600 to-cyan-600",
     },
     {
+      icon: CheckCircle,
       label: "Completed",
       value: interviews.filter((i) => i.status === "Completed").length,
+      color: "from-green-600 to-emerald-600",
     },
-    { label: "Total", value: interviews.length },
+    {
+      icon: AlertCircle,
+      label: "Total Interviews",
+      value: interviews.length,
+      color: "from-purple-600 to-pink-600",
+    },
   ];
 
   return (
     <div
-      className="min-h-screen"
-      style={{
-        backgroundImage: `url(${dashImg})`,
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
+      className={`min-h-screen transition-colors duration-300 ${
+        darkMode
+          ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
+          : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
+      }`}
     >
-      <RecruiterNav currentPage="interviews" />
+      <RecruiterNav
+        darkMode={darkMode}
+        onToggleDarkMode={() => {
+          setDarkMode(!darkMode);
+          localStorage.setItem("darkMode", !darkMode);
+        }}
+        userName={userName}
+        currentPage="interviews"
+      />
 
-      <main className="max-w-7xl mx-auto px-6 py-12">
-        {/* ================= STATS ================= */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
-          {stats.map((s, i) => (
-            <div
-              key={i}
-              className="rounded-3xl p-6 backdrop-blur-md"
-              style={{
-                background: "rgba(255,255,255,0.75)",
-                border: `1px solid ${theme.sand}`,
-              }}
-            >
-              <div className="mb-3">
-                <InsertChartIcon
-                  style={{ fontSize: 28, color: theme.cinnamon }}
+      {/* Main Content */}
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Upcoming Interview Alert Banner */}
+        {getUpcomingInterviews().length > 0 && (
+          <div
+            className={`mb-6 rounded-2xl border backdrop-blur p-6 animate-pulse ${
+              darkMode
+                ? "bg-orange-600/20 border-orange-500/50"
+                : "bg-orange-100 border-orange-200"
+            }`}
+          >
+            <div className="flex items-start gap-4">
+              <div
+                className={`p-3 rounded-xl ${
+                  darkMode ? "bg-orange-600/30" : "bg-orange-200"
+                }`}
+              >
+                <AlertCircle
+                  size={24}
+                  className={darkMode ? "text-orange-300" : "text-orange-700"}
                 />
               </div>
-              <p className="text-sm font-semibold text-[#6E4B2C]/70">
-                {s.label}
-              </p>
-              <p className="text-4xl font-bold text-[#6E4B2C]">{s.value}</p>
+              <div className="flex-1">
+                <h3
+                  className={`text-lg font-bold mb-2 ${
+                    darkMode ? "text-orange-200" : "text-orange-900"
+                  }`}
+                >
+                  🔔 Upcoming Interview Alert!
+                </h3>
+                {getUpcomingInterviews().map((iv) => {
+                  const minutes = Math.floor(
+                    (new Date(iv.scheduled_at).getTime() - Date.now()) /
+                      (1000 * 60)
+                  );
+                  return (
+                    <p
+                      key={iv.id}
+                      className={`text-sm font-semibold mb-1 ${
+                        darkMode ? "text-orange-300" : "text-orange-800"
+                      }`}
+                    >
+                      Interview with {iv.candidate_name} starts in {minutes}{" "}
+                      minute{minutes !== 1 ? "s" : ""}! (
+                      {new Date(iv.scheduled_at).toLocaleTimeString()})
+                    </p>
+                  );
+                })}
+              </div>
             </div>
-          ))}
+          </div>
+        )}
+
+        {/* Stats Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {stats.map((stat, idx) => {
+            const IconComponent = stat.icon;
+            return (
+              <div
+                key={idx}
+                className={`rounded-3xl border backdrop-blur transition-all duration-300 transform hover:scale-105 ${
+                  darkMode
+                    ? "bg-slate-800/40 border-slate-700/50 shadow-lg shadow-black/20"
+                    : "bg-white/60 border-blue-100/50 shadow-lg shadow-blue-500/5"
+                }`}
+                style={{
+                  animationDelay: `${idx * 50}ms`,
+                  animation: "fadeInUp 0.6s ease-out",
+                }}
+              >
+                <div className="p-6">
+                  <div
+                    className={`p-3 rounded-xl w-fit mb-4 bg-gradient-to-r ${stat.color}`}
+                  >
+                    <IconComponent size={24} className="text-white" />
+                  </div>
+                  <p
+                    className={`text-sm font-semibold uppercase tracking-wide mb-1 ${
+                      darkMode ? "text-slate-400" : "text-slate-600"
+                    }`}
+                  >
+                    {stat.label}
+                  </p>
+                  <p
+                    className={`text-4xl font-bold ${
+                      darkMode ? "text-white" : "text-slate-900"
+                    }`}
+                  >
+                    {stat.value}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* ================= SEARCH & FILTER ================= */}
+        {/* Search and Filter Section */}
         <div
-          className="rounded-3xl p-6 mb-10 backdrop-blur-md"
-          style={{
-            background: "rgba(255,255,255,0.75)",
-            border: `1px solid ${theme.sand}`,
-          }}
+          className={`rounded-3xl border backdrop-blur mb-8 p-6 transition-all duration-300 ${
+            darkMode
+              ? "bg-slate-800/40 border-slate-700/50"
+              : "bg-white/60 border-blue-100/50"
+          }`}
         >
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Search Input */}
             <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6E4B2C]">
-                <SearchIcon style={{ fontSize: 18 }} />
-              </div>
+              <Search
+                size={20}
+                className={`absolute left-4 top-1/2 -translate-y-1/2 ${
+                  darkMode ? "text-slate-400" : "text-slate-500"
+                }`}
+              />
               <input
+                type="text"
                 placeholder="Search interviews..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 py-3 rounded-xl border"
-                style={{
-                  background: theme.cream,
-                  borderColor: theme.sand,
-                  color: theme.clay,
-                }}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`w-full pl-12 pr-4 py-3 rounded-xl border font-semibold transition-all duration-300 focus:outline-none focus:ring-2 ${
+                  darkMode
+                    ? "bg-slate-700/30 border-slate-600/50 text-white placeholder-slate-400 focus:ring-indigo-500/50 focus:border-indigo-500/50"
+                    : "bg-blue-50/50 border-blue-100/50 text-slate-900 placeholder-slate-500 focus:ring-blue-500/30 focus:border-blue-500/30"
+                }`}
               />
             </div>
 
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="py-3 px-4 rounded-xl border"
-              style={{
-                background: theme.cream,
-                borderColor: theme.sand,
-                color: theme.clay,
-              }}
-            >
-              <option value="all">All</option>
-              <option value="Scheduled">Scheduled</option>
-              <option value="Completed">Completed</option>
-            </select>
-
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value)}
-              className="py-3 px-4 rounded-xl border"
-              style={{
-                background: theme.cream,
-                borderColor: theme.sand,
-                color: theme.clay,
-              }}
-            >
-              <option value="upcoming">Soonest</option>
-              <option value="recent">Most Recent</option>
-            </select>
+            {/* Filter Dropdown */}
+            <div className="relative">
+              <ChevronDown
+                size={20}
+                className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none ${
+                  darkMode ? "text-slate-400" : "text-slate-500"
+                }`}
+              />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className={`w-full px-4 py-3 pr-12 rounded-xl border font-semibold appearance-none transition-all duration-300 focus:outline-none focus:ring-2 cursor-pointer ${
+                  darkMode
+                    ? "bg-slate-700/30 border-slate-600/50 text-white focus:ring-indigo-500/50 focus:border-indigo-500/50"
+                    : "bg-blue-50/50 border-blue-100/50 text-slate-900 focus:ring-blue-500/30 focus:border-blue-500/30"
+                }`}
+              >
+                <option value="all">All Status</option>
+                <option value="Scheduled">Scheduled</option>
+                <option value="Completed">Completed</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* ================= LIST ================= */}
-        {loading ? (
-          <p className="text-center text-[#6E4B2C]">Loading interviews…</p>
-        ) : filtered.length === 0 ? (
-          <p className="text-center text-[#6E4B2C]/70">No interviews found</p>
-        ) : (
-          <div className="space-y-4">
-            {filtered.map((iv) => {
-              const sched = new Date(iv.scheduled_at).getTime();
-              const passed = currentTime - sched > 10 * 60 * 1000; // passed if >10 minutes after scheduled time
-              const statusLabel = passed ? "Passed" : iv.status;
-
-              return (
-                <div
-                  key={iv.id}
-                  className="rounded-3xl p-6 backdrop-blur-md hover:shadow-xl transition"
-                  style={{
-                    background: "rgba(255,255,255,0.8)",
-                    border: `1px solid ${theme.sand}`,
-                  }}
-                >
-                  <div className="flex flex-col md:flex-row justify-between gap-6">
-                    <div>
-                      <h3 className="text-xl font-bold text-[#6E4B2C]">
-                        {iv.candidate_name}
-                      </h3>
-                      <p className="text-sm text-[#6E4B2C]/70 mt-1">
-                        {iv.job_title}
-                      </p>
-                      <p className="text-sm mt-1 text-[#B87B4B]">
-                        {new Date(iv.scheduled_at).toLocaleString()}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span
-                        className="px-4 py-1 rounded-full text-sm font-semibold"
-                        style={{
-                          background: passed
-                            ? "#d1d5db"
-                            : iv.status === "Scheduled"
-                            ? theme.cinnamon
-                            : theme.sand,
-                          color: passed ? theme.clay : theme.cream,
-                        }}
-                      >
-                        {statusLabel}
-                      </span>
-
-                      <span className="text-sm text-[#6E4B2C]/70">
-                        ⏱ {passed ? "Passed" : countdown(iv.scheduled_at)}
-                      </span>
-
-                      {!passed && (
-                        <a
-                          href={`/#/interview-room?id=${iv.id}`}
-                          className="px-4 py-2 rounded-xl font-semibold"
-                          style={{
-                            background: theme.cinnamon,
-                            color: theme.cream,
-                          }}
+        {/* Interviews List */}
+        <div className="space-y-4">
+          {filteredInterviews.length === 0 ? (
+            <div
+              className={`rounded-3xl border backdrop-blur p-12 text-center transition-all duration-300 ${
+                darkMode
+                  ? "bg-slate-800/40 border-slate-700/50"
+                  : "bg-white/60 border-blue-100/50"
+              }`}
+            >
+              <Calendar
+                size={48}
+                className={`mx-auto mb-4 ${
+                  darkMode ? "text-slate-500" : "text-slate-400"
+                }`}
+              />
+              <p
+                className={`text-lg font-semibold ${
+                  darkMode ? "text-slate-300" : "text-slate-600"
+                }`}
+              >
+                No interviews found
+              </p>
+            </div>
+          ) : (
+            filteredInterviews.map((interview, idx) => (
+              <div
+                key={interview.id}
+                className={`rounded-2xl border backdrop-blur transition-all duration-300 transform hover:scale-102 hover:shadow-lg ${
+                  darkMode
+                    ? "bg-slate-800/40 border-slate-700/50 hover:border-slate-600/50 shadow-md hover:shadow-lg hover:shadow-indigo-500/10"
+                    : "bg-white/60 border-blue-100/50 hover:border-blue-200/50 shadow-md hover:shadow-lg hover:shadow-blue-500/10"
+                }`}
+                style={{
+                  animationDelay: `${idx * 50}ms`,
+                  animation: "fadeInUp 0.6s ease-out",
+                }}
+              >
+                <div className="p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    {/* Interview Info */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <User
+                          size={24}
+                          className={
+                            darkMode ? "text-blue-400" : "text-blue-600"
+                          }
+                        />
+                        <h3
+                          className={`text-xl font-bold ${
+                            darkMode ? "text-white" : "text-slate-900"
+                          }`}
                         >
-                          Join
-                        </a>
-                      )}
+                          {interview.candidate_name}
+                        </h3>
+                      </div>
 
-                      <button
-                        className="px-3 py-2 rounded-xl"
-                        style={{
-                          background: theme.sand,
-                          color: theme.clay,
-                        }}
+                      <div className="flex flex-wrap gap-4 mb-3">
+                        <div
+                          className={`flex items-center gap-2 text-sm font-semibold ${
+                            darkMode ? "text-indigo-300" : "text-indigo-600"
+                          }`}
+                        >
+                          <Briefcase size={16} />
+                          {interview.job_title}
+                        </div>
+                        <div
+                          className={`flex items-center gap-2 text-sm ${
+                            darkMode ? "text-slate-400" : "text-slate-600"
+                          }`}
+                        >
+                          <Calendar size={16} />
+                          {new Date(
+                            interview.scheduled_at
+                          ).toLocaleDateString()}
+                        </div>
+                        <div
+                          className={`flex items-center gap-2 text-sm ${
+                            darkMode ? "text-slate-400" : "text-slate-600"
+                          }`}
+                        >
+                          <Clock size={16} />
+                          {new Date(
+                            interview.scheduled_at
+                          ).toLocaleTimeString()}
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <span
+                        className={`inline-block px-4 py-2 rounded-full text-xs font-bold ${
+                          interview.status === "Scheduled"
+                            ? darkMode
+                              ? "bg-blue-600/30 text-blue-300 border border-blue-500/50"
+                              : "bg-blue-100 text-blue-800 border border-blue-200"
+                            : darkMode
+                            ? "bg-green-600/30 text-green-300 border border-green-500/50"
+                            : "bg-green-100 text-green-800 border border-green-200"
+                        }`}
                       >
-                        Send
-                      </button>
+                        {interview.status}
+                      </span>
+
+                      {/* Countdown Timer */}
+                      <div
+                        className={`mt-3 px-3 py-2 rounded-lg w-fit font-semibold text-sm ${
+                          darkMode
+                            ? "bg-orange-600/20 text-orange-300 border border-orange-500/30"
+                            : "bg-orange-100 text-orange-700 border border-orange-200"
+                        }`}
+                      >
+                        ⏱️ {getCountdown(interview.scheduled_at)}
+                      </div>
                     </div>
+
+                    {/* Action Button */}
+                    {(() => {
+                      const now = Date.now();
+                      const interviewTime = new Date(
+                        interview.scheduled_at
+                      ).getTime();
+                      const timeDiff = interviewTime - now;
+                      const minutesUntil = Math.floor(timeDiff / (1000 * 60));
+                      const canJoin = minutesUntil <= 5 && minutesUntil >= -30; // Can join 5 min before to 30 min after
+
+                      if (canJoin) {
+                        return (
+                          <button
+                            onClick={() =>
+                              (window.location.hash = `/interview-room?id=${interview.id}`)
+                            }
+                            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap animate-pulse ${
+                              darkMode
+                                ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/50"
+                                : "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/30"
+                            }`}
+                          >
+                            🎥 Join Interview
+                          </button>
+                        );
+                      }
+                      return (
+                        <button
+                          disabled
+                          className={`px-6 py-3 rounded-xl font-semibold whitespace-nowrap opacity-50 cursor-not-allowed ${
+                            darkMode
+                              ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                              : "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
+                          }`}
+                        >
+                          Interview Scheduled
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              </div>
+            ))
+          )}
+        </div>
       </main>
+
+      {/* CSS for animations */}
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-slideDown {
+          animation: slideDown 0.3s ease-out;
+        }
+
+        .hover\:scale-102:hover {
+          transform: scale(1.02);
+        }
+      `}</style>
     </div>
   );
-}
+};
+
+export default RecruiterInterviewsPage;

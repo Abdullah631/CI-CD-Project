@@ -7,7 +7,7 @@ class User(models.Model):
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=50)
     date = models.DateTimeField(auto_now_add=True)
-    photo = models.ImageField(upload_to='photos/', blank=True, null=True)
+    photo = models.ImageField(upload_to='photos/')
     
     # Profile fields
     full_name = models.CharField(max_length=255, blank=True)

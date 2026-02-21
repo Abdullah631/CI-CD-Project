@@ -1,174 +1,120 @@
-@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap");
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
-  --bg: #f4efde; /* cream */
-  --bg-soft: #e9e1cd;
-  --surface-0: #e3d8c0; /* tan */
-  --surface-1: #d6c3a4;
-  --surface-2: rgba(198, 171, 135, 0.32);
-  --text-primary: #2f2416;
-  --text-secondary: #65563f;
-  --border-strong: rgba(89, 66, 39, 0.18);
-  --border-stronger: rgba(89, 66, 39, 0.32);
-  --accent: #b2724d; /* cinnamon */
-  --accent-2: #a5b9a3; /* sage */
-  --card-radius: 18px;
+  --bg: #ffffff;
+  --text: #213547;
+  --muted: #6b7280;
+  --card-bg: #ffffff;
+  --btn-bg: #f9f9f9;
+  --btn-border: transparent;
+  --input-bg: #ffffff;
+  --input-border: #e5e7eb;
 
-  /* Named colors for easier use */
-  --cream: #f4efde;
-  --tan: #c2a07f;
-  --cinnamon: #b2724d;
-  --sage: #a5b9a3;
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
 
-  font-family: "Space Grotesk", "Manrope", system-ui, -apple-system, sans-serif;
-  line-height: 1.6;
-  font-weight: 500;
-  color: var(--text-primary);
+  color-scheme: light dark;
+  color: var(--text);
   background-color: var(--bg);
+
+  font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-* {
-  box-sizing: border-box;
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
 }
 
-html,
-body,
-#root {
+html, body, #root {
   width: 100%;
-  min-height: 100%;
+  height: 100%;
 }
 
 body {
   margin: 0;
-  background: radial-gradient(
-      circle at 30% 18%,
-      rgba(165, 185, 163, 0.32),
-      transparent 36%
-    ),
-    radial-gradient(
-      circle at 80% -10%,
-      rgba(178, 114, 77, 0.22),
-      transparent 32%
-    ),
-    radial-gradient(
-      circle at 52% 78%,
-      rgba(194, 160, 127, 0.18),
-      transparent 40%
-    ),
-    var(--bg);
-  color: var(--text-primary);
+  display: block;
+  min-width: 320px;
+  min-height: 100vh;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.text-muted {
-  color: var(--text-secondary);
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
 }
 
 button {
+  border-radius: 8px;
+  border: 1px solid var(--btn-border);
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
   font-family: inherit;
+  background-color: var(--btn-bg);
+  cursor: pointer;
+  transition: border-color 0.25s, background-color 0.2s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
 }
 
-/* Smooth page motion */
-.page-enter {
-  opacity: 0;
-  transform: translateY(18px);
-}
-.page-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 280ms ease, transform 320ms ease;
+:root {
+  /* Light mode defaults are defined in :root variables above. */
 }
 
-/* Card shine effect */
-.shine {
-  position: relative;
-  overflow: hidden;
-}
-.shine::after {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -30%;
-  width: 40%;
-  height: 200%;
-  background: linear-gradient(
-    120deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.12) 50%,
-    transparent 100%
-  );
-  transform: rotate(12deg);
-  animation: shimmer 5s ease-in-out infinite;
+/* Dark theme variables override */
+.dark {
+  --bg: #071025;
+  --text: #e6eef8;
+  --muted: #9aa4b2;
+  --card-bg: #0f1724;
+  --btn-bg: #0b1220;
+  --btn-border: rgba(255,255,255,0.04);
+  --input-bg: #071425;
+  --input-border: #1f2937;
 }
 
-@keyframes shimmer {
-  0% {
-    transform: translateX(-120%) rotate(12deg);
-  }
-  50% {
-    transform: translateX(180%) rotate(12deg);
-  }
-  100% {
-    transform: translateX(180%) rotate(12deg);
-  }
+/* Dark mode overrides for Tailwind utility classes used in the app.
+   This provides a global dark theme without changing all markup to use
+   Tailwind's `dark:` variants. The `document.documentElement` will get
+   the `dark` class when dark mode is enabled. */
+.dark body { background-color: var(--bg); color: var(--text); }
+.dark .bg-white { background-color: var(--card-bg) !important; }
+.dark .bg-slate-50 { background-color: var(--bg) !important; }
+.dark .bg-gray-100 { background-color: #071825 !important; }
+.dark .text-gray-900 { color: var(--text) !important; }
+.dark .text-gray-600 { color: var(--muted) !important; }
+.dark .border-gray-200 { border-color: var(--input-border) !important; }
+.dark .hover\:bg-gray-100:hover { background-color: rgba(255,255,255,0.02) !important; }
+.dark .bg-indigo-600 { background-color: #4f46e5 !important; }
+.dark .text-white { color: #fff !important; }
+.dark .bg-purple-100 { background-color: #221933 !important; }
+.dark .text-purple-600 { color: #c4b5fd !important; }
+.dark .bg-blue-100 { background-color: #172554 !important; }
+.dark .text-blue-600 { color: #93c5fd !important; }
+.dark .bg-gray-50 { background-color: #061225 !important; }
+
+/* Form controls in dark mode */
+.dark input,
+.dark textarea,
+.dark select,
+.dark .p-2,
+.dark .p-3,
+.dark .rounded-md,
+.dark .rounded-lg {
+  background-color: var(--input-bg) !important;
+  color: var(--text) !important;
+  border-color: var(--input-border) !important;
 }
 
-/* Scrollbar styling */
-*::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-*::-webkit-scrollbar-track {
-  background: var(--surface-2);
-}
-*::-webkit-scrollbar-thumb {
-  background: rgba(89, 66, 39, 0.3);
-  border-radius: 999px;
-}
-*::-webkit-scrollbar-thumb:hover {
-  background: rgba(89, 66, 39, 0.45);
-}
-
-/* Forms */
-input,
-textarea,
-select {
-  border-radius: 12px;
-  background: var(--surface-0);
-  border: 1px solid var(--border-strong);
-  color: var(--text-primary);
-  padding: 0.75rem 0.9rem;
-  transition: border-color 180ms ease, box-shadow 180ms ease,
-    background 180ms ease;
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-  outline: none;
-  border-color: var(--border-stronger);
-  box-shadow: 0 0 0 3px rgba(165, 185, 163, 0.35);
-  background: rgba(255, 255, 255, 0.65);
-}
-
-/* Utility helpers */
-.shadow-soft {
-  box-shadow: 0 18px 34px rgba(30, 22, 10, 0.16);
-}
-.blur-bg {
-  backdrop-filter: blur(12px);
-}
-.pill {
-  border-radius: 999px;
-}
+/* Buttons should use variable backgrounds */
+.dark button { background-color: var(--btn-bg) !important; border-color: var(--btn-border) !important; color: var(--text); }

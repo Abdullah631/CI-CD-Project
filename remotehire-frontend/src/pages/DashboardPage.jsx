@@ -1,523 +1,342 @@
 import React, { useState, useEffect } from "react";
-import dashImg from "../assets/dash.jpg";
 import { API_BASE_URL } from "../config";
-import PostAddIcon from "@mui/icons-material/PostAdd";
-import InsertChartIcon from "@mui/icons-material/InsertChart";
-import CloseIcon from "@mui/icons-material/Close";
-// icons: post, chart, close for dashboard
+import {
+  Briefcase,
+  Users,
+  FileText,
+  Calendar,
+  Gift,
+  LogOut,
+} from "lucide-react";
 import RecruiterNav from "../components/RecruiterNav";
 
-/* ================= THEME ================= */
-const theme = {
-  sage: "#B7C7B1",
-  cinnamon: "#B87B4B",
-  sand: "#CDB08E",
-  cream: "#FBF6E6",
-  clay: "#6E4B2C",
-};
-
-/* ================= DASHBOARD ================= */
-export default function DashboardPage() {
-  const [userName, setUserName] = useState("User");
-  const [stats, setStats] = useState([]);
-  const [recentApplicants, setRecentApplicants] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const [showPostModal, setShowPostModal] = useState(false);
-  const [postForm, setPostForm] = useState({
-    title: "",
-    description: "",
-    location: "",
-    employment_type: "",
-    level: "",
-    status: "active",
-    requirements: {
-      required_skills: [],
-      required_experience_years: 0,
-      required_education: "",
-      required_languages: [],
-      required_certifications: [],
-    },
+// Dashboard Page
+export const DashboardPage = () => {
+  const [userRole, setUserRole] = useState("candidate");
+  const [userName, setUserName] = useState("");
+  const [recruiterStats, setRecruiterStats] = useState({
+    active_jobs: 0,
+    active_candidates: 0,
+    total_applications: 0,
+    interviews_scheduled: 0,
+    offers_sent: 0,
   });
+  const [recruiterStatsLoading, setRecruiterStatsLoading] = useState(true);
+  const [recruiterStatsError, setRecruiterStatsError] = useState(null);
+  const [darkMode, setDarkMode] = useState(
+    localStorage.getItem("darkMode") === "true"
+  );
 
-  /* ================= USER ================= */
   useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (!stored) return (window.location.href = "/#/signin");
-    try {
-      const u = JSON.parse(stored);
-      setUserName(u.username || "User");
-      if ((u.role || "candidate") === "candidate")
-        window.location.href = "/#/candidate-dashboard";
-    } catch {}
-  }, []);
+    localStorage.setItem("darkMode", darkMode);
+  }, [darkMode]);
 
-  /* ================= FETCH ================= */
   useEffect(() => {
-    const token = localStorage.getItem("token");
-
-    const load = async () => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
       try {
-        setLoading(true);
-        const [statsRes, recentRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/recruiter/dashboard/stats/`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`${API_BASE_URL}/api/recruiter/recent-applications/`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-
-        const s = await statsRes.json();
-        const r = recentRes.ok ? await recentRes.json() : [];
-
-        setStats([
-          { label: "Active Jobs", value: s.active_jobs || 0 },
-          { label: "Candidates", value: s.active_candidates || 0 },
-          { label: "Applications", value: s.total_applications || 0 },
-          { label: "Interviews", value: s.interviews_scheduled || 0 },
-          { label: "Offers", value: s.offers_sent || 0 },
-        ]);
-
-        setRecentApplicants(r || []);
-        setError("");
-      } catch (e) {
-        setError("Failed to load dashboard");
-      } finally {
-        setLoading(false);
+        const userData = JSON.parse(storedUser);
+        setUserRole(userData.role || "candidate");
+        setUserName(userData.username || "User");
+        if (userData.role === "candidate") {
+          window.location.href = "/#/candidate-dashboard";
+        }
+      } catch (error) {
+        console.error("Error parsing user data:", error);
       }
-    };
-
-    load();
-    const poll = setInterval(load, 30000);
-    return () => clearInterval(poll);
+    } else {
+      window.location.href = "/#/signin";
+    }
   }, []);
 
-  const greeting = () => {
-    const h = new Date().getHours();
-    return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  useEffect(() => {
+    if (userRole !== "recruiter") return;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setRecruiterStats({
+        active_jobs: 0,
+        active_candidates: 0,
+        total_applications: 0,
+        interviews_scheduled: 0,
+        offers_sent: 0,
+      });
+      return;
+    }
+    setRecruiterStatsLoading(true);
+    setRecruiterStatsError(null);
+    fetch(`${window.API_BASE_URL}/api/recruiter/dashboard/stats/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`API error: ${res.status} ${text}`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setRecruiterStats({
+          active_jobs: data.active_jobs || 0,
+          active_candidates: data.active_candidates || 0,
+          total_applications: data.total_applications || 0,
+          interviews_scheduled: data.interviews_scheduled || 0,
+          offers_sent: data.offers_sent || 0,
+        });
+      })
+      .catch((err) => {
+        console.error("Error fetching recruiter stats:", err);
+        setRecruiterStatsError(err.message || "Failed to load stats");
+      })
+      .finally(() => setRecruiterStatsLoading(false));
+  }, [userRole]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    window.location.href = "/#/signin";
   };
+
+  const navigationItems = [
+    { label: "Job Posts", href: "/#/job-posts", icon: Briefcase },
+    { label: "Candidates", href: "/#/recruiter-candidates", icon: Users },
+    { label: "Interviews", href: "/#/recruiter-interviews", icon: Calendar },
+    { label: "Analytics", href: "/#/recruiter-analytics", icon: FileText },
+  ];
+
+  const stats = [
+    {
+      label: "Active Jobs",
+      value: recruiterStats.active_jobs,
+      icon: Briefcase,
+      color: "from-blue-600 to-indigo-600",
+      lightBg: "bg-blue-50/60",
+      darkBg: "bg-blue-600/10",
+    },
+    {
+      label: "Active Candidates",
+      value: recruiterStats.active_candidates,
+      icon: Users,
+      color: "from-green-600 to-emerald-600",
+      lightBg: "bg-green-50/60",
+      darkBg: "bg-green-600/10",
+    },
+    {
+      label: "Total Applications",
+      value: recruiterStats.total_applications,
+      icon: FileText,
+      color: "from-purple-600 to-pink-600",
+      lightBg: "bg-purple-50/60",
+      darkBg: "bg-purple-600/10",
+    },
+    {
+      label: "Interviews Scheduled",
+      value: recruiterStats.interviews_scheduled,
+      icon: Calendar,
+      color: "from-orange-600 to-red-600",
+      lightBg: "bg-orange-50/60",
+      darkBg: "bg-orange-600/10",
+    },
+    {
+      label: "Offers Sent",
+      value: recruiterStats.offers_sent,
+      icon: Gift,
+      color: "from-pink-600 to-rose-600",
+      lightBg: "bg-pink-50/60",
+      darkBg: "bg-pink-600/10",
+    },
+  ];
 
   return (
     <div
-      className="min-h-screen"
-      style={{
-        backgroundImage: `url(${dashImg})`,
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
+      className={`min-h-screen transition-colors duration-300 ${
+        darkMode
+          ? "bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
+          : "bg-gradient-to-br from-blue-50 via-white to-indigo-50"
+      }`}
     >
-      <RecruiterNav currentPage="dashboard" />
+      <RecruiterNav
+        darkMode={darkMode}
+        onToggleDarkMode={() => {
+          setDarkMode(!darkMode);
+          localStorage.setItem("darkMode", !darkMode);
+        }}
+        userName={userName}
+        currentPage="dashboard"
+      />
 
-      <main className="max-w-7xl mx-auto px-6 py-12">
-        {/* ================= HEADER ================= */}
-        <div className="flex flex-col md:flex-row justify-between gap-6 mb-10">
-          <div>
-            <p className="text-sm text-[#6E4B2C]/70">
-              {new Date().toLocaleDateString()}
-            </p>
-            <h1 className="text-3xl font-bold text-[#6E4B2C]">
-              {greeting()}, {userName}
-            </h1>
-            <p className="text-sm text-[#6E4B2C]/70 mt-1">
-              Overview of your hiring activity
-            </p>
-          </div>
-
-          <button
-            onClick={() => setShowPostModal(true)}
-            className="px-5 py-3 rounded-xl font-semibold inline-flex items-center"
-            style={{
-              background: theme.cinnamon,
-              color: theme.cream,
-            }}
+      {/* Main Content */}
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Page Title */}
+        <div className="mb-12">
+          <h1
+            className={`text-4xl sm:text-5xl font-bold mb-2 transition-colors duration-300 ${
+              darkMode ? "text-white" : "text-slate-900"
+            }`}
           >
-            <PostAddIcon style={{ fontSize: 20, marginRight: 8 }} />
-            Post Job
-          </button>
+            Recruiter Dashboard
+          </h1>
+          <p
+            className={`text-lg transition-colors duration-300 ${
+              darkMode ? "text-slate-400" : "text-slate-600"
+            }`}
+          >
+            Welcome back, {userName}!
+          </p>
         </div>
 
-        {/* ================= STATES ================= */}
-        {loading ? (
-          <p className="text-center text-[#6E4B2C]">Loading dashboard…</p>
-        ) : error ? (
-          <div className="rounded-xl p-4 bg-red-100 text-red-700">{error}</div>
+        {/* Stats Grid */}
+        {recruiterStatsLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <div
+              className={`animate-spin rounded-full h-12 w-12 border-4 border-transparent ${
+                darkMode ? "border-t-indigo-500" : "border-t-blue-600"
+              }`}
+            ></div>
+          </div>
+        ) : recruiterStatsError ? (
+          <div
+            className={`p-6 rounded-2xl border ${
+              darkMode
+                ? "bg-red-500/10 border-red-500/30 text-red-300"
+                : "bg-red-50/80 border-red-200 text-red-700"
+            }`}
+          >
+            <p className="font-semibold">{recruiterStatsError}</p>
+          </div>
         ) : (
-          <>
-            {/* ================= STATS ================= */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
-              {stats.map((s, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
+            {stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
                 <div
-                  key={i}
-                  className="rounded-3xl p-6 hover:shadow-xl transition"
-                  style={{
-                    background: "rgba(255,255,255,0.85)",
-                    border: `1px solid ${theme.sand}`,
-                  }}
+                  key={index}
+                  className={`rounded-3xl border backdrop-blur transition-all duration-300 overflow-hidden group hover:scale-105 cursor-pointer ${
+                    darkMode
+                      ? `${stat.darkBg} border-slate-700/50 hover:border-slate-700/80 shadow-xl shadow-black/10`
+                      : `${stat.lightBg} border-blue-100/50 hover:border-blue-200/80 shadow-lg shadow-blue-500/5`
+                  }`}
                 >
-                  <div className="mb-3">
-                    <InsertChartIcon
-                      style={{ fontSize: 28, color: theme.cinnamon }}
-                    />
+                  <div className="p-6 h-full flex flex-col">
+                    <div
+                      className={`p-3 rounded-xl w-fit mb-4 transition-all duration-300 group-hover:scale-110 bg-gradient-to-r ${stat.color}`}
+                    >
+                      <Icon size={24} className="text-white" />
+                    </div>
+                    <p
+                      className={`text-sm font-semibold uppercase tracking-wide mb-2 ${
+                        darkMode ? "text-slate-400" : "text-slate-600"
+                      }`}
+                    >
+                      {stat.label}
+                    </p>
+                    <p
+                      className={`text-4xl font-bold ${
+                        darkMode ? "text-white" : "text-slate-900"
+                      }`}
+                    >
+                      {stat.value}
+                    </p>
                   </div>
-                  <p className="text-sm text-[#6E4B2C]/70">{s.label}</p>
-                  <p className="text-3xl font-bold text-[#6E4B2C]">{s.value}</p>
                 </div>
-              ))}
-            </div>
-
-            {/* ================= CONTENT ================= */}
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Recent Applicants */}
-              <div
-                className="rounded-3xl p-6"
-                style={{
-                  background: "rgba(255,255,255,0.85)",
-                  border: `1px solid ${theme.sand}`,
-                }}
-              >
-                <h3 className="text-xl font-bold text-[#6E4B2C] mb-4">
-                  Recent Applicants
-                </h3>
-
-                {recentApplicants.length === 0 ? (
-                  <p className="text-sm text-[#6E4B2C]/60">
-                    No recent applicants
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {recentApplicants.slice(0, 4).map((a) => (
-                      <div
-                        key={a.id}
-                        className="flex justify-between items-center p-3 rounded-xl"
-                        style={{ background: theme.cream }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center font-bold"
-                            style={{
-                              background: theme.cinnamon,
-                              color: theme.cream,
-                            }}
-                          >
-                            {(a.name || "?")[0]}
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-[#6E4B2C]">
-                              {a.name}
-                            </p>
-                            <p className="text-xs text-[#6E4B2C]/60">
-                              Applied{" "}
-                              {new Date(a.applied_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2">
-                          <button
-                            className="px-3 py-2 rounded-lg"
-                            style={{ background: theme.sand }}
-                          >
-                            Message
-                          </button>
-                          <button
-                            className="px-3 py-2 rounded-lg"
-                            style={{
-                              background: theme.cinnamon,
-                              color: theme.cream,
-                            }}
-                          >
-                            Add
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Quick Actions */}
-              <div
-                className="rounded-3xl p-6"
-                style={{
-                  background: "rgba(255,255,255,0.85)",
-                  border: `1px solid ${theme.sand}`,
-                }}
-              >
-                <h3 className="text-xl font-bold text-[#6E4B2C] mb-4">
-                  Quick Actions
-                </h3>
-
-                <div className="space-y-3">
-                  <button
-                    onClick={() => setShowPostModal(true)}
-                    className="w-full px-4 py-3 rounded-xl font-semibold"
-                    style={{
-                      background: theme.cinnamon,
-                      color: theme.cream,
-                    }}
-                  >
-                    <span className="inline-flex items-center">
-                      <PostAddIcon style={{ fontSize: 18, marginRight: 8 }} />
-                      Post New Job
-                    </span>
-                  </button>
-
-                  <a
-                    href="/#/recruiter-analytics"
-                    className="block text-center px-4 py-3 rounded-xl font-semibold"
-                    style={{
-                      background: theme.cream,
-                      color: theme.clay,
-                      border: `1px solid ${theme.sand}`,
-                    }}
-                  >
-                    <span className="inline-flex items-center justify-center">
-                      <InsertChartIcon
-                        style={{ fontSize: 18, marginRight: 8 }}
-                      />
-                      View Analytics
-                    </span>
-                  </a>
-                </div>
-              </div>
-            </div>
-          </>
+              );
+            })}
+          </div>
         )}
-      </main>
 
-      {/* ================= POST JOB MODAL ================= */}
-      {showPostModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        {/* Quick Actions */}
+        <div
+          className={`rounded-3xl border backdrop-blur transition-all duration-300 overflow-hidden ${
+            darkMode
+              ? "bg-slate-800/40 border-slate-700/50 shadow-xl shadow-black/20"
+              : "bg-white/60 border-blue-100/50 shadow-lg shadow-blue-500/5"
+          }`}
+        >
+          {/* Section Header */}
           <div
-            className="absolute inset-0 bg-black/40"
-            onClick={() => setShowPostModal(false)}
-          />
-
-          <div
-            className="relative w-full max-w-xl p-6 rounded-3xl"
-            style={{ background: theme.cream }}
+            className={`px-8 py-6 border-b transition-all duration-300 ${
+              darkMode
+                ? "bg-indigo-600/10 border-slate-700/50"
+                : "bg-blue-600/5 border-blue-100/50"
+            }`}
           >
-            <div className="flex justify-between mb-4">
-              <h3 className="text-xl font-bold text-[#6E4B2C]">
-                Post a New Job
-              </h3>
-              <button
-                onClick={() => setShowPostModal(false)}
-                aria-label="Close modal"
+            <h2
+              className={`text-2xl font-bold ${
+                darkMode ? "text-white" : "text-slate-900"
+              }`}
+            >
+              Quick Actions
+            </h2>
+          </div>
+
+          {/* Content */}
+          <div className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <a
+                href="/#/job-posts"
+                className={`px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-between group hover:scale-105 transform active:scale-95 ${
+                  darkMode
+                    ? "bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-600/30"
+                    : "bg-blue-100 border border-blue-200 text-blue-700 hover:bg-blue-200"
+                }`}
               >
-                <CloseIcon style={{ fontSize: 18 }} />
-              </button>
-            </div>
-
-            <input
-              placeholder="Job title"
-              className="w-full p-3 rounded-xl border mb-3"
-              value={postForm.title}
-              onChange={(e) =>
-                setPostForm({ ...postForm, title: e.target.value })
-              }
-            />
-
-            <textarea
-              placeholder="Description"
-              rows={5}
-              className="w-full p-3 rounded-xl border mb-4"
-              value={postForm.description}
-              onChange={(e) =>
-                setPostForm({
-                  ...postForm,
-                  description: e.target.value,
-                })
-              }
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              <input
-                placeholder="Location (e.g. Remote, London)"
-                className="w-full p-3 rounded-xl border"
-                value={postForm.location}
-                onChange={(e) =>
-                  setPostForm({ ...postForm, location: e.target.value })
-                }
-              />
-
-              <input
-                placeholder="Employment type (Full-time, Part-time)"
-                className="w-full p-3 rounded-xl border"
-                value={postForm.employment_type}
-                onChange={(e) =>
-                  setPostForm({ ...postForm, employment_type: e.target.value })
-                }
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              <input
-                placeholder="Level (e.g. Senior, Mid, Junior)"
-                className="w-full p-3 rounded-xl border"
-                value={postForm.level}
-                onChange={(e) =>
-                  setPostForm({ ...postForm, level: e.target.value })
-                }
-              />
-
-              <select
-                className="w-full p-3 rounded-xl border"
-                value={postForm.status}
-                onChange={(e) =>
-                  setPostForm({ ...postForm, status: e.target.value })
-                }
+                <span>View Job Posts</span>
+                <Briefcase
+                  size={20}
+                  className="group-hover:translate-x-1 transition-transform"
+                />
+              </a>
+              <a
+                href="/#/recruiter-candidates"
+                className={`px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-between group hover:scale-105 transform active:scale-95 ${
+                  darkMode
+                    ? "bg-green-600/20 border border-green-500/30 text-green-300 hover:bg-green-600/30"
+                    : "bg-green-100 border border-green-200 text-green-700 hover:bg-green-200"
+                }`}
               >
-                <option value="active">Active</option>
-                <option value="closed">Closed</option>
-                <option value="draft">Draft</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-              <input
-                placeholder="Required skills (comma separated)"
-                className="w-full p-3 rounded-xl border"
-                value={(postForm.requirements?.required_skills || []).join(
-                  ", "
-                )}
-                onChange={(e) =>
-                  setPostForm({
-                    ...postForm,
-                    requirements: {
-                      ...(postForm.requirements || {}),
-                      required_skills: e.target.value
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    },
-                  })
-                }
-              />
-
-              <input
-                type="number"
-                min={0}
-                placeholder="Experience years"
-                className="w-full p-3 rounded-xl border"
-                value={postForm.requirements?.required_experience_years || 0}
-                onChange={(e) =>
-                  setPostForm({
-                    ...postForm,
-                    requirements: {
-                      ...(postForm.requirements || {}),
-                      required_experience_years: parseInt(
-                        e.target.value || 0,
-                        10
-                      ),
-                    },
-                  })
-                }
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-              <input
-                placeholder="Education (e.g. BSc Computer Science)"
-                className="w-full p-3 rounded-xl border"
-                value={postForm.requirements?.required_education || ""}
-                onChange={(e) =>
-                  setPostForm({
-                    ...postForm,
-                    requirements: {
-                      ...(postForm.requirements || {}),
-                      required_education: e.target.value,
-                    },
-                  })
-                }
-              />
-
-              <input
-                placeholder="Languages (comma separated)"
-                className="w-full p-3 rounded-xl border"
-                value={(postForm.requirements?.required_languages || []).join(
-                  ", "
-                )}
-                onChange={(e) =>
-                  setPostForm({
-                    ...postForm,
-                    requirements: {
-                      ...(postForm.requirements || {}),
-                      required_languages: e.target.value
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean),
-                    },
-                  })
-                }
-              />
-            </div>
-
-            <input
-              placeholder="Certifications (comma separated)"
-              className="w-full p-3 rounded-xl border mb-4"
-              value={(
-                postForm.requirements?.required_certifications || []
-              ).join(", ")}
-              onChange={(e) =>
-                setPostForm({
-                  ...postForm,
-                  requirements: {
-                    ...(postForm.requirements || {}),
-                    required_certifications: e.target.value
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  },
-                })
-              }
-            />
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowPostModal(false)}
-                className="px-4 py-2 rounded-xl"
+                <span>View Candidates</span>
+                <Users
+                  size={20}
+                  className="group-hover:translate-x-1 transition-transform"
+                />
+              </a>
+              <a
+                href="/#/recruiter-interviews"
+                className={`px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-between group hover:scale-105 transform active:scale-95 ${
+                  darkMode
+                    ? "bg-orange-600/20 border border-orange-500/30 text-orange-300 hover:bg-orange-600/30"
+                    : "bg-orange-100 border border-orange-200 text-orange-700 hover:bg-orange-200"
+                }`}
               >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 rounded-xl font-semibold"
-                style={{
-                  background: theme.cinnamon,
-                  color: theme.cream,
-                }}
-                onClick={async () => {
-                  try {
-                    const token = localStorage.getItem("token");
-                    // use recruiter add endpoint to include full job schema
-                    const res = await fetch(
-                      `${API_BASE_URL}/api/recruiter/jobs/add/`,
-                      {
-                        method: "POST",
-                        headers: {
-                          "Content-Type": "application/json",
-                          Authorization: `Bearer ${token}`,
-                        },
-                        body: JSON.stringify(postForm),
-                      }
-                    );
-                    if (!res.ok) throw new Error();
-                    window.location.href = "/#/job-posts";
-                  } catch {
-                    alert("Failed to post job");
-                  }
-                }}
+                <span>Schedule Interviews</span>
+                <Calendar
+                  size={20}
+                  className="group-hover:translate-x-1 transition-transform"
+                />
+              </a>
+              <a
+                href="/#/recruiter-analytics"
+                className={`px-6 py-4 rounded-xl font-semibold transition-all duration-300 flex items-center justify-between group hover:scale-105 transform active:scale-95 ${
+                  darkMode
+                    ? "bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30"
+                    : "bg-purple-100 border border-purple-200 text-purple-700 hover:bg-purple-200"
+                }`}
               >
-                Post Job
-              </button>
+                <span>View Analytics</span>
+                <FileText
+                  size={20}
+                  className="group-hover:translate-x-1 transition-transform"
+                />
+              </a>
             </div>
           </div>
         </div>
-      )}
+      </main>
     </div>
   );
-}
+};
+
+export default DashboardPage;

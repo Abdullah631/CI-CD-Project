@@ -8,7 +8,7 @@ if defined _OLD_CODEPAGE (
     "%SystemRoot%\System32\chcp.com" 65001 > nul
 )
 
-set VIRTUAL_ENV=C:\Users\abdul\OneDrive\Desktop\uni\fyp\D2\RemoteHire.io\remotehire_backend\venv
+set VIRTUAL_ENV=C:\Users\abdul\OneDrive\Desktop\New folder\CI-CD-Project\remotehire_backend\venv
 
 if not defined PROMPT set PROMPT=$P$G
 

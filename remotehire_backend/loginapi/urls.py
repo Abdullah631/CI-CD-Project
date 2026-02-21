@@ -2,7 +2,7 @@ from django.urls import path
 from .views import register_user, login_user, recruiter_jobs, add_job
 from .views import recruiter_job_detail, active_candidates_count, public_jobs, apply_job
 from .views import schedule_interview, candidate_interview_response, recruiter_interviews, candidate_interviews
-from .views import interview_signal, get_interview_signals, deepfake_check
+from .views import interview_signal, get_interview_signals
 from .views import google_login, google_callback, github_login, github_callback
 from .views import candidate_applications, candidate_dashboard_stats, candidate_withdraw_application
 from .views import recruiter_dashboard_stats, recruiter_job_applicants, recruiter_all_applicants, recruiter_recent_applicants
@@ -10,6 +10,7 @@ from .views import google_oauth, github_oauth, linkedin_oauth
 from .views import candidate_profile, upload_cv, get_cv_metadata, download_cv, view_cv, delete_cv
 from .views import recruiter_analytics
 from .views import request_password_reset, reset_password
+from .deepfake_detection import detect_deepfake, deepfake_model_status
 
 urlpatterns = [
     path('register/', register_user, name='register_user'),
@@ -24,7 +25,6 @@ urlpatterns = [
     path('recruiter/jobs/<int:job_id>/applicants/', recruiter_job_applicants, name='recruiter_job_applicants'),
     path('recruiter/applicants/', recruiter_all_applicants, name='recruiter_all_applicants'),
     path('recruiter/applicants/recent/', recruiter_recent_applicants, name='recruiter_recent_applicants'),
-    path('recruiter/recent-applications/', recruiter_recent_applicants, name='recruiter_recent_applications_alias'),
     path('jobs/', public_jobs, name='public_jobs'),
     path('jobs/<int:job_id>/apply/', apply_job, name='apply_job'),
     # Interviews
@@ -34,8 +34,6 @@ urlpatterns = [
     path('interviews/<int:interview_id>/response/', candidate_interview_response, name='candidate_interview_response'),
     path('interviews/<int:interview_id>/signal/', interview_signal, name='interview_signal'),
     path('interviews/<int:interview_id>/signals/', get_interview_signals, name='get_interview_signals'),
-    # Deepfake / identity check endpoint
-    path('deepfake/check/', deepfake_check, name='deepfake_check'),
     # Candidate endpoints
     path('candidate/applications/', candidate_applications, name='candidate_applications'),
     path('candidate/dashboard/stats/', candidate_dashboard_stats, name='candidate_dashboard_stats'),
@@ -59,4 +57,7 @@ urlpatterns = [
     path('auth/google/callback/', google_callback, name='google_callback'),
     path('auth/github/login/', github_login, name='github_login'),
     path('auth/github/callback/', github_callback, name='github_callback'),
+    # Deepfake Detection
+    path('deepfake/detect/', detect_deepfake, name='detect_deepfake'),
+    path('deepfake/status/', deepfake_model_status, name='deepfake_model_status'),
 ]

@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import dashImg from "./assets/dash.jpg";
-import LandingPage from "./pages/LandingPage";
-import SignInPage from "./pages/SignInPage";
-import SignUpPage from "./pages/SignUpPage";
-import DashboardPage from "./pages/DashboardPage";
+import { LandingPage } from "./pages/LandingPage";
+import { SignInPage } from "./pages/SignInPage";
+import { SignUpPage } from "./pages/SignUpPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import JobPostsPage from "./pages/JobPostsPage";
 import FindJobsPage from "./pages/FindJobsPage";
 import CandidateDashboardPage from "./pages/CandidateDashboardPage";
@@ -14,8 +13,10 @@ import RecruiterAnalyticsPage from "./pages/RecruiterAnalyticsPage";
 import InterviewRoomPage from "./pages/InterviewRoomPage";
 import { GitHubCallbackPage } from "./pages/GitHubCallbackPage";
 import { LinkedInCallbackPage } from "./pages/LinkedInCallbackPage";
-import ProfilePage from "./pages/ProfilePage";
-import CandidateDetailsPage from "./pages/CandidateDetailsPage";
+import { ProfilePage } from "./pages/ProfilePage";
+import { CandidateDetailsPage } from "./pages/CandidateDetailsPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 
 export const App = () => {
   const [darkMode, setDarkMode] = useState(() => {
@@ -40,32 +41,6 @@ export const App = () => {
     return hash;
   });
 
-  const [role, setRole] = useState(() => {
-    try {
-      const u = localStorage.getItem("user");
-      if (!u) return "";
-      const parsed = JSON.parse(u);
-      return parsed?.role || "";
-    } catch {
-      return "";
-    }
-  });
-
-  useEffect(() => {
-    const onStorage = (e) => {
-      if (e.key === "user") {
-        try {
-          const newUser = e.newValue ? JSON.parse(e.newValue) : null;
-          setRole(newUser?.role || "");
-        } catch {
-          setRole("");
-        }
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
   useEffect(() => {
     const onHashChange = () => {
       setCurrentPath(window.location.hash.slice(1) || "/");
@@ -73,18 +48,6 @@ export const App = () => {
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
-
-  // Keep role in sync when navigation changes (login redirects in same tab)
-  useEffect(() => {
-    try {
-      const u = localStorage.getItem("user");
-      if (!u) return setRole("");
-      const parsed = JSON.parse(u);
-      setRole(parsed?.role || "");
-    } catch {
-      setRole("");
-    }
-  }, [currentPath]);
 
   let page;
 
@@ -131,7 +94,7 @@ export const App = () => {
       page = <CandidateInterviewsPage />;
       break;
     case currentPath === "/recruiter-candidates":
-      page = <RecruiterCandidatesPage darkMode={darkMode} />;
+      page = <RecruiterCandidatesPage />;
       break;
     case currentPath === "/recruiter-interviews":
       page = <RecruiterInterviewsPage />;
@@ -151,12 +114,7 @@ export const App = () => {
   }
 
   return (
-    <div
-      className={`app-shell ${role ? `role-${role}` : ""}`}
-      style={{
-        ["--dash-img"]: `url(${dashImg})`,
-      }}
-    >
+    <div className="min-h-screen">
       <main>{page}</main>
     </div>
   );

@@ -1,40 +1,27 @@
 import React, { useState } from "react";
-import BoltIcon from "@mui/icons-material/Bolt";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import SearchIcon from "@mui/icons-material/Search";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import PersonIcon from "@mui/icons-material/Person";
-import LogoutIcon from "@mui/icons-material/Logout";
+import { Zap, Menu, X, LogOut, Settings } from "lucide-react";
 
 /**
  * Navbar for candidate pages.
  * Props:
+ * - darkMode: boolean controlling theme styles
+ * - onToggleDarkMode: function to toggle dark mode (should also update localStorage)
  * - userName: string with candidate's name
  * - currentPage: string indicating which page is active (e.g., 'dashboard', 'details', 'interviews', 'profile', 'findjobs')
  */
-export const CandidateNav = ({ userName, currentPage }) => {
+export const CandidateNav = ({
+  darkMode,
+  onToggleDarkMode,
+  userName,
+  currentPage,
+}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
-    {
-      label: "Dashboard",
-      path: "/#/candidate-dashboard",
-      id: "dashboard",
-      icon: DashboardIcon,
-    },
-    {
-      label: "Find Jobs",
-      path: "/#/find-jobs",
-      id: "findjobs",
-      icon: SearchIcon,
-    },
-    {
-      label: "Interviews",
-      path: "/#/candidate-interviews",
-      id: "interviews",
-      icon: CalendarTodayIcon,
-    },
-    { label: "Profile", path: "/#/profile", id: "profile", icon: PersonIcon },
+    { label: "Dashboard", path: "/#/candidate-dashboard", id: "dashboard" },
+    { label: "Find Jobs", path: "/#/find-jobs", id: "findjobs" },
+    { label: "Interviews", path: "/#/candidate-interviews", id: "interviews" },
+    { label: "Profile", path: "/#/profile", id: "profile" },
   ];
 
   const handleLogout = () => {
@@ -45,119 +32,108 @@ export const CandidateNav = ({ userName, currentPage }) => {
 
   return (
     <nav
-      className="sticky top-0 z-40 backdrop-blur-lg border-b"
-      style={{
-        background: "rgba(244, 239, 222, 0.95)",
-        borderColor: "var(--border-strong)",
-      }}
+      className={`sticky top-0 z-40 backdrop-blur-lg border-b transition-all duration-300 ${
+        darkMode
+          ? "bg-slate-800/80 border-slate-700/50"
+          : "bg-white/80 border-blue-100/50"
+      }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-3 group">
             <div
-              className="p-2 rounded-lg transition-all duration-300 group-hover:scale-110"
-              style={{
-                background: "linear-gradient(135deg, #b2724d, #a5b9a3)",
-              }}
+              className={`p-2 rounded-lg transition-all duration-300 group-hover:scale-110 ${
+                darkMode ? "bg-indigo-600/20" : "bg-blue-100"
+              }`}
             >
-              <BoltIcon style={{ fontSize: 24, color: "#f4efde" }} />
+              <Zap
+                size={24}
+                className={darkMode ? "text-indigo-400" : "text-blue-600"}
+              />
             </div>
             <span
-              className="text-xl font-bold"
-              style={{ color: "var(--text-primary)" }}
+              className={`text-xl font-bold transition-colors duration-300 ${
+                darkMode ? "text-white" : "text-slate-900"
+              }`}
             >
               <a href="/#/">RemoteHire.io</a>
             </span>
           </div>
 
-          {/* Desktop Navigation - now always visible */}
-          <div className="flex items-center gap-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentPage === item.id;
-              return (
-                <a
-                  key={item.id}
-                  href={item.path}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200"
-                  style={{
-                    background: isActive
-                      ? "linear-gradient(135deg, var(--cinnamon), var(--sage))"
-                      : "transparent",
-                    color: isActive ? "var(--cream)" : "var(--text-primary)",
-                    border: isActive ? "none" : "1px solid transparent",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = "var(--surface-0)";
-                      e.currentTarget.style.border =
-                        "1px solid var(--border-strong)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.background = "transparent";
-                      e.currentTarget.style.border = "1px solid transparent";
-                    }
-                  }}
-                >
-                  {Icon && <Icon style={{ fontSize: 16 }} />}
-                  {item.label}
-                </a>
-              );
-            })}
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-1">
+            {navItems.map((item) => (
+              <a
+                key={item.id}
+                href={item.path}
+                className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                  currentPage === item.id
+                    ? darkMode
+                      ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/50"
+                      : "bg-blue-100 text-blue-600 border border-blue-200"
+                    : darkMode
+                    ? "text-slate-300 hover:text-white hover:bg-slate-700/30"
+                    : "text-slate-700 hover:text-slate-900 hover:bg-blue-50"
+                }`}
+              >
+                {item.label}
+              </a>
+            ))}
           </div>
 
           {/* Right Side - Actions */}
           <div className="flex items-center gap-3">
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={onToggleDarkMode}
+              aria-label="Toggle dark mode"
+              className={`p-2 rounded-lg transition-all duration-300 hover:scale-105 border ${
+                darkMode
+                  ? "bg-slate-700/40 border-slate-600/50 text-yellow-300 hover:bg-slate-700/60"
+                  : "bg-white/70 border-blue-100 text-slate-700 hover:bg-white"
+              }`}
+            >
+              {darkMode ? "☀️" : "🌙"}
+            </button>
+
             {/* User Info & Settings */}
-            <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-3">
               {userName && (
                 <span
-                  className="pill"
-                  style={{
-                    background: "rgba(165, 185, 163, 0.25)",
-                    borderColor: "var(--border-strong)",
-                    fontSize: "0.875rem",
-                    padding: "0.25rem 0.75rem",
-                  }}
+                  className={`text-sm font-semibold px-3 py-1 rounded-lg ${
+                    darkMode
+                      ? "bg-slate-700/40 border-slate-600/50 text-indigo-400 hover:bg-slate-700/60"
+                      : "bg-white/70 border-blue-100 text-slate-700 hover:bg-white"
+                  }`}
                 >
                   {userName}
                 </span>
               )}
-              <button
-                title="Settings"
-                className="p-2 rounded-lg transition-all duration-300 hover:scale-110"
-                style={{
-                  background: "var(--surface-1)",
-                  border: "1px solid var(--border-strong)",
-                  color: "var(--text-secondary)",
-                }}
-              >
-                Settings
-              </button>
+
               <button
                 onClick={handleLogout}
                 title="Logout"
-                className="p-2 rounded-lg transition-all duration-300 hover:scale-110"
-                style={{
-                  background: "rgba(220, 38, 38, 0.1)",
-                  border: "1px solid rgba(220, 38, 38, 0.3)",
-                  color: "#dc2626",
-                }}
+                className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
+                  darkMode
+                    ? "bg-slate-700/40 border-slate-600/50 text-red-300 hover:bg-slate-700/60"
+                    : "bg-white/70 border-blue-100 text-slate-700 hover:bg-white"
+                }`}
               >
-                Logout
+                <LogOut size={20} />
               </button>
             </div>
 
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg"
-              style={{ color: "var(--text-primary)" }}
+              className={`md:hidden p-2 rounded-lg transition-all duration-300 ${
+                darkMode
+                  ? "text-slate-300 hover:bg-slate-700/40"
+                  : "text-slate-700 hover:bg-blue-50"
+              }`}
             >
-              {mobileMenuOpen ? "Close" : "Menu"}
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
@@ -165,44 +141,33 @@ export const CandidateNav = ({ userName, currentPage }) => {
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="md:hidden mt-4 space-y-2 pb-4">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentPage === item.id;
-              return (
-                <a
-                  key={item.id}
-                  href={item.path}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium"
-                  style={{
-                    background: isActive
-                      ? "linear-gradient(135deg, var(--cinnamon), var(--sage))"
-                      : "var(--surface-0)",
-                    color: isActive ? "var(--cream)" : "var(--text-primary)",
-                    border: "1px solid var(--border-strong)",
-                  }}
-                >
-                  {Icon && <Icon style={{ fontSize: 20 }} />}
-                  {item.label}
-                </a>
-              );
-            })}
-            <div
-              style={{
-                borderTop: "1px solid var(--border-strong)",
-                paddingTop: "0.5rem",
-                marginTop: "0.5rem",
-              }}
-            >
+            {navItems.map((item) => (
+              <a
+                key={item.id}
+                href={item.path}
+                className={`block px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                  currentPage === item.id
+                    ? darkMode
+                      ? "bg-indigo-600/20 text-indigo-400"
+                      : "bg-blue-100 text-blue-600"
+                    : darkMode
+                    ? "text-slate-300 hover:text-white hover:bg-slate-700/30"
+                    : "text-slate-700 hover:text-slate-900 hover:bg-blue-50"
+                }`}
+              >
+                {item.label}
+              </a>
+            ))}
+            <div className="border-t border-slate-600/30 pt-2 mt-2">
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2"
-                style={{
-                  background: "rgba(220, 38, 38, 0.1)",
-                  border: "1px solid rgba(220, 38, 38, 0.3)",
-                  color: "#dc2626",
-                }}
+                className={`w-full text-left px-4 py-2 rounded-lg font-semibold transition-all duration-300 flex items-center gap-2 ${
+                  darkMode
+                    ? "text-red-400 hover:text-red-300 hover:bg-red-600/20"
+                    : "text-red-600 hover:text-red-700 hover:bg-red-50"
+                }`}
               >
-                <LogoutIcon style={{ fontSize: 18 }} />
+                <LogOut size={18} />
                 Logout
               </button>
             </div>

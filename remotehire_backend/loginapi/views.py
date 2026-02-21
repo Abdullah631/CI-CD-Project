@@ -1,4 +1,4 @@
-from .models import User, Job, Interview, Application
+from .models import User, Job, Interview, Application, PasswordResetToken
 from django.db import models
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -1086,11 +1086,12 @@ def upload_cv(request):
         from .cv_parser import extract_cv_metadata
         import tempfile
         import os
+        from django.utils import timezone
         
         # Save CV file
         print(f"[UPLOAD_CV] Saving CV file for user {user.id}")
         user.cv = cv_file
-        user.cv_last_updated = datetime.utcnow()
+        user.cv_last_updated = timezone.now()
         user.save()
         
         # For S3, we need to download the file temporarily for processing
@@ -1128,8 +1129,18 @@ def upload_cv(request):
         
         # Extract metadata from CV using Gemini
         print(f"[UPLOAD_CV] Starting metadata extraction from {cv_path}")
-        metadata = extract_cv_metadata(cv_path)
+        metadata = extract_cv_metadata(cv_path, cached_metadata=user.cv_metadata, file_hash=None)
         print(f"[UPLOAD_CV] Metadata extracted: {metadata}")
+        
+        # Validate metadata
+        if not metadata:
+            metadata = {
+                "error": "Failed to extract CV metadata. Please try again.",
+                "years_of_experience": 0,
+                "skills": [],
+                "education": [],
+                "work_experience": []
+            }
         
         # Clean up temp file if S3 was used
         if settings.USE_S3 and os.path.exists(cv_path):
@@ -1467,47 +1478,6 @@ def get_interview_signals(request, interview_id):
     except Exception as e:
         print(f"[GET_INTERVIEW_SIGNALS] Error: {str(e)}")
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['POST'])
-@csrf_exempt
-def deepfake_check(request):
-    """Simple deepfake check placeholder - returns successful response to avoid breaking UI.
-    Heavy model integration removed to prevent OOM on Render free tier.
-    """
-    user, err = _get_user_from_bearer(request)
-    if err:
-        return err
-
-    try:
-        interview_id = request.POST.get('interview_id') or request.data.get('interview_id')
-        if not interview_id:
-            return Response({'error': 'interview_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Ensure interview exists and user is participant
-        interview = Interview.objects.filter(id=interview_id).filter(
-            models.Q(recruiter=user) | models.Q(candidate=user)
-        ).first()
-        if not interview:
-            return Response({'error': 'Interview not found or access denied.'}, status=status.HTTP_404_NOT_FOUND)
-
-        if 'image' not in request.FILES:
-            return Response({'error': 'image file is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        img_file = request.FILES['image']
-        print(f"[DEEPFAKE_CHECK] Received image {getattr(img_file, 'name', '')} for interview {interview_id} by user {user.id}")
-
-        # Return placeholder response - keeps UI working
-        return Response({
-            'verdict': 'real',
-            'confidence': 85.0,
-            'message': 'Deepfake detection processing',
-            'source': 'placeholder'
-        }, status=status.HTTP_200_OK)
-
-    except Exception as e:
-        print(f"[DEEPFAKE_CHECK] Error: {str(e)}")
-        return Response({'verdict': 'unknown', 'confidence': 0, 'message': str(e)}, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])

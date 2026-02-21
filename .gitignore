@@ -48,5 +48,3 @@ htmlcov/
 tempCodeRunnerFile.bat
 *.bak
 .node_modules
-.venvdeepfakemodel/best_model.pt
-.venv

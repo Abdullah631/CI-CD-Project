@@ -25,18 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-bbg1h*0%j1%*c@z^z33@13zg5q$2ija(ea@^r8iu9w=*+)tkwq')
+SECRET_KEY = 'django-insecure-bbg1h*0%j1%*c@z^z33@13zg5q$2ija(ea@^r8iu9w=*+)tkwq'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False  # Always False on Render to reduce memory footprint
+DEBUG = True
 
-# Parse ALLOWED_HOSTS from env and add Vercel domains
-_allowed = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost,192.168.100.12,remotehire-io-1.onrender.com').split(',')
-ALLOWED_HOSTS = [host.strip() for host in _allowed] + [
-    'remotehire-amber.vercel.app',
-    'remote-hire-io.vercel.app',
-    '.vercel.app',  # Allow all Vercel preview deployments
-]
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','*','192.168.100.12']
 
 # Google OAuth Configuration
 GOOGLE_OAUTH_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
@@ -46,12 +40,18 @@ GITHUB_OAUTH_CLIENT_SECRET = os.getenv('GITHUB_OAUTH_CLIENT_SECRET')
 LINKEDIN_OAUTH_CLIENT_ID = os.getenv('LINKEDIN_OAUTH_CLIENT_ID')
 LINKEDIN_OAUTH_CLIENT_SECRET = os.getenv('LINKEDIN_OAUTH_CLIENT_SECRET')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
+# AI Providers for CV Parsing
+OLLAMA_API_URL = os.getenv('OLLAMA_API_URL', 'http://localhost:11434')
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'gemma3:latest')
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', None)
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', None)
+OLLAMA_TIMEOUT = os.getenv('OLLAMA_TIMEOUT', '120')
+OLLAMA_NUM_PREDICT = os.getenv('OLLAMA_NUM_PREDICT', '500')
+CV_TEXT_MAX_CHARS = os.getenv('CV_TEXT_MAX_CHARS', '12000')
+
 FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:5173')
 PASSWORD_RESET_TOKEN_EXPIRY_HOURS = int(os.getenv('PASSWORD_RESET_TOKEN_EXPIRY_HOURS', '1'))
-
-# Hugging Face Space / Token Configuration
-HUGGINGFACE_SPACE_ID = os.getenv('HUGGINGFACE_SPACE_ID', 'Abdullah7731/remotehire-deepfake-demo')
-HUGGINGFACE_API_TOKEN = os.getenv('HUGGINGFACE_API_TOKEN')
 
 
 # Application definition
@@ -75,7 +75,7 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'loginapi.middleware.JWTAuthenticationMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',  # Disabled for API-only backend with JWT auth
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -102,22 +102,17 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 
-# Database - Remote PostgreSQL (Supabase)
+# Database - Supabase PostgreSQL (configurable via .env)
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.postgresql'),
         'NAME': os.getenv('DB_NAME', 'postgres'),
-        'USER': os.getenv('DB_USER'),
+        'USER': os.getenv('DB_USER', 'postgres'),
         'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
         'PORT': os.getenv('DB_PORT', '5432'),
-        'CONN_MAX_AGE': 600,  # Connection pooling: reuse connections for 10 minutes
-        'OPTIONS': {
-            'connect_timeout': 10,  # Fail fast if DB doesn't respond
-            'options': '-c statement_timeout=30000'  # 30s statement timeout
-        }
     }
 }
 
@@ -205,41 +200,21 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000',
     'http://192.168.100.12:5173',
     'http://192.168.100.12:8000',
-    'https://remotehire-io-1.onrender.com',
-    'https://remote-hire-io.vercel.app',
-]
-
-# Allow Vercel preview deployments via regex
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r'^https://remote-hire-io.*\.vercel\.app$',
-    r'^https://.*vercel\.app$',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
-
-# Allow all origins to avoid CORS blocks during testing and preview deployments
+# During local development allow all origins to simplify testing.
+# Remove or change this in production.
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Explicit CORS headers to send on all responses
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
-
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
+# CSRF Settings - Trust frontend origins
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'https://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://127.0.0.1:5173',
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
 ]
 
 # Email settings

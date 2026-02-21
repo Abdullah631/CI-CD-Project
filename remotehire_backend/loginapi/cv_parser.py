@@ -1,11 +1,15 @@
 """
-CV Parsing and Metadata Extraction using Google Gemini API
+CV Parsing and Metadata Extraction with Multi-Provider AI Support and Caching
+Supports: Google Gemini, Groq, OpenAI (with fallback)
 """
-import google.generativeai as genai
+import google.genai as genai
 from django.conf import settings
 import json
 from pypdf import PdfReader
 from pathlib import Path
+import time
+import hashlib
+import os
 
 # Try to import python-docx for DOCX support
 try:
@@ -68,12 +72,252 @@ def extract_text_from_docx(docx_path):
         return ""
 
 
-def configure_gemini():
-    """Configure Gemini API"""
-    api_key = settings.GEMINI_API_KEY
+def calculate_file_hash(file_path):
+    """Calculate SHA256 hash of file for cache key"""
+    try:
+        sha256_hash = hashlib.sha256()
+        with open(file_path, "rb") as f:
+            for byte_block in iter(lambda: f.read(4096), b""):
+                sha256_hash.update(byte_block)
+        file_hash = sha256_hash.hexdigest()
+        print(f"[FILE_HASH] Calculated hash: {file_hash[:16]}...")
+        return file_hash
+    except Exception as e:
+        print(f"[FILE_HASH] Error calculating hash: {str(e)}")
+        return None
+
+
+def get_gemini_client():
+    """Get Gemini API client using the new google.genai package"""
+    api_key = getattr(settings, 'GEMINI_API_KEY', None)
+    if not api_key or api_key == 'your_gemini_api_key_here':
+        print(f"[GEMINI_CONFIG] API Key not configured")
+        return None
+    
+    try:
+        # The new google.genai package doesn't have configure()
+        # Instead, pass api_key directly to the client
+        client = genai.Client(api_key=api_key)
+        print(f"[GEMINI_CONFIG] Gemini client created successfully")
+        return client
+    except Exception as e:
+        print(f"[GEMINI_CONFIG] Error creating client: {str(e)}")
+        return None
+
+
+def call_ollama_api(prompt, cv_text):
+    """Call local Ollama API (NO RATE LIMITS!)"""
+    try:
+        ollama_url = getattr(settings, 'OLLAMA_API_URL', 'http://localhost:11434')
+        model = getattr(settings, 'OLLAMA_MODEL', 'gemma2')
+        timeout_sec = getattr(settings, 'OLLAMA_TIMEOUT', 120)
+        if isinstance(timeout_sec, str):
+            try:
+                timeout_sec = int(timeout_sec)
+            except Exception:
+                timeout_sec = 120
+        num_predict = getattr(settings, 'OLLAMA_NUM_PREDICT', 500)
+        if isinstance(num_predict, str):
+            try:
+                num_predict = int(num_predict)
+            except Exception:
+                num_predict = 500
+        
+        print(f"[OLLAMA_API] Calling local Ollama at {ollama_url} with model {model}...")
+        
+        import requests
+        # Increase timeout to 120 seconds for large CVs and slower systems
+        # Ollama can take time on first run or with large files
+        response = requests.post(
+            f"{ollama_url}/api/generate",
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "temperature": 0.1,
+                    "top_p": 0.9,
+                    "num_predict": num_predict
+                }
+            },
+            timeout=timeout_sec
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            response_text = result.get('response', '')
+            if response_text:
+                print(f"[OLLAMA_API] ✓ Success with local Ollama")
+                return response_text
+            else:
+                print(f"[OLLAMA_API] Empty response from Ollama")
+                return None
+        else:
+            print(f"[OLLAMA_API] Error {response.status_code}: {response.text[:200]}")
+            return None
+    except Exception as e:
+        error_msg = str(e)
+        if "timeout" in error_msg.lower():
+            print(f"[OLLAMA_API] Request timed out. Ollama may be slow or processing large file.")
+            print(f"[OLLAMA_API] Troubleshooting: 1) Ensure Ollama is running: ollama serve")
+            print(f"[OLLAMA_API] Troubleshooting: 2) Check system resources")
+        elif "Connection" in error_msg or "refused" in error_msg:
+            print(f"[OLLAMA_API] Ollama not running or not accessible: {error_msg[:100]}")
+        else:
+            print(f"[OLLAMA_API] Exception: {error_msg[:100]}")
+        return None
+
+
+def call_gemini_api(prompt, cv_text):
+    """Call Gemini API with retry logic"""
+    try:
+        client = get_gemini_client()
+        if not client:
+            return None
+        
+        # Retry logic for rate limits
+        max_retries = 2
+        retry_delay = 1
+        
+        for attempt in range(max_retries):
+            try:
+                print(f"[GEMINI_API] Attempt {attempt + 1}/{max_retries}")
+                # Use the new google.genai API
+                response = client.models.generate_content(
+                    model="gemini-2.0-flash",
+                    contents=prompt
+                )
+                result_text = response.text if hasattr(response, 'text') else str(response)
+                if result_text:
+                    print(f"[GEMINI_API] ✓ Success with Gemini API")
+                    return result_text
+                else:
+                    print(f"[GEMINI_API] Empty response from Gemini")
+                    return None
+            except Exception as e:
+                error_str = str(e)
+                print(f"[GEMINI_API] Error: {error_str[:200]}")
+                if "429" in error_str or "quota" in error_str.lower():
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                    else:
+                        print(f"[GEMINI_API] Rate limited after retries")
+                        return None
+                else:
+                    return None
+        return None
+    except Exception as e:
+        print(f"[GEMINI_API] Exception: {str(e)}")
+        return None
+
+
+def call_groq_api(prompt, cv_text):
+    """Call Groq API (free tier: 30 RPM)"""
+    try:
+        api_key = getattr(settings, 'GROQ_API_KEY', None)
+        if not api_key or api_key == 'your_groq_api_key_here':
+            print("[GROQ_API] API Key not configured")
+            return None
+        
+        import requests
+        print("[GROQ_API] Calling Groq API...")
+        
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "llama-3.3-70b-versatile",  # Fast and accurate
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1
+            },
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result['choices'][0]['message']['content']
+        else:
+            print(f"[GROQ_API] Error {response.status_code}: {response.text[:200]}")
+            return None
+    except Exception as e:
+        print(f"[GROQ_API] Exception: {str(e)}")
+        return None
+
+
+def call_openai_api(prompt, cv_text):
+    """Call OpenAI API (free trial: $5 credit)"""
+    try:
+        api_key = getattr(settings, 'OPENAI_API_KEY', None)
+        if not api_key or api_key == 'your_openai_api_key_here':
+            print("[OPENAI_API] API Key not configured")
+            return None
+        
+        import requests
+        print("[OPENAI_API] Calling OpenAI API...")
+        
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "gpt-3.5-turbo",  # Cheapest option
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.1
+            },
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result['choices'][0]['message']['content']
+        else:
+            print(f"[OPENAI_API] Error {response.status_code}: {response.text[:200]}")
+            return None
+    except Exception as e:
+        print(f"[OPENAI_API] Exception: {str(e)}")
+        return None
+
+
+def call_multi_provider_ai(prompt, cv_text):
+    """Try multiple AI providers in sequence until one succeeds"""
+    providers = [
+        ("Ollama (Local)", call_ollama_api),  # Try local first - NO RATE LIMITS!
+        ("Groq", call_groq_api),              # Groq first (fast & free)
+        ("Gemini", call_gemini_api),          # Gemini as fallback
+        ("OpenAI", call_openai_api)
+    ]
+    
+    print(f"[MULTI_AI] Trying {len(providers)} providers...")
+    
+    for provider_name, provider_func in providers:
+        try:
+            print(f"[MULTI_AI] Attempting {provider_name}...")
+            response_text = provider_func(prompt, cv_text)
+            if response_text:
+                print(f"[MULTI_AI] ✓ Success with {provider_name}")
+                return response_text, provider_name
+        except Exception as e:
+            print(f"[MULTI_AI] {provider_name} failed: {str(e)}")
+            continue
+    
+    print("[MULTI_AI] All providers failed")
+    return None, None
+
+
+def configure_gemini_old():
+    """Configure Gemini API using the new google.genai package"""
+    api_key = getattr(settings, 'GEMINI_API_KEY', None)
     print(f"[GEMINI_CONFIG] API Key configured: {bool(api_key)}")
     if not api_key or api_key == 'your_gemini_api_key_here':
         raise ValueError("GEMINI_API_KEY not configured in .env")
+    
+    # Configure with the new google.genai client
     genai.configure(api_key=api_key)
     
     # List available models
@@ -89,13 +333,29 @@ def configure_gemini():
     print(f"[GEMINI_CONFIG] Gemini configured successfully")
 
 
-def extract_cv_metadata(cv_file_path):
+def extract_cv_metadata(cv_file_path, cached_metadata=None, file_hash=None):
     """
-    Extract metadata from CV using Google Gemini API
+    Extract metadata from CV using Multi-Provider AI with Caching
     Returns structured metadata including skills, experience, education, etc.
+    
+    Args:
+        cv_file_path: Path to the CV file
+        cached_metadata: Previously cached metadata (if exists)
+        file_hash: Hash of the current file
     """
     try:
-        configure_gemini()
+        # Calculate file hash for cache comparison
+        if not file_hash:
+            file_hash = calculate_file_hash(cv_file_path)
+        
+        # Check if we have valid cached metadata
+        if cached_metadata and isinstance(cached_metadata, dict):
+            cached_hash = cached_metadata.get('_file_hash')
+            if cached_hash == file_hash and not cached_metadata.get('error'):
+                print(f"[CV_METADATA] ✓ Using cached metadata (hash match)")
+                return cached_metadata
+            else:
+                print(f"[CV_METADATA] Cache invalid or file changed, re-analyzing...")
         
         # Extract text based on file type
         file_ext = str(cv_file_path).lower()
@@ -118,9 +378,22 @@ def extract_cv_metadata(cv_file_path):
             return {"error": f"Unsupported file type. Supported: PDF, DOCX, TXT"}
         
         if not cv_text.strip():
-            return {"error": "Could not extract text from CV"}
+            return {"error": "Could not extract text from CV. The file may be empty or corrupted."}
         
-        # Use Gemini to extract structured data
+        print(f"[CV_METADATA] Extracted CV text length: {len(cv_text)} characters")
+        
+        # Trim excessively long CV text to avoid timeouts in local models
+        max_chars = getattr(settings, 'CV_TEXT_MAX_CHARS', 12000)
+        if isinstance(max_chars, str):
+            try:
+                max_chars = int(max_chars)
+            except Exception:
+                max_chars = 12000
+        if len(cv_text) > max_chars:
+            print(f"[CV_METADATA] Trimming CV text from {len(cv_text)} to {max_chars} characters to improve performance")
+            cv_text = cv_text[:max_chars]
+
+        # Build prompt for structured data extraction
         prompt = f"""
         Analyze the following CV/Resume and extract the following information in JSON format:
         
@@ -160,27 +433,22 @@ def extract_cv_metadata(cv_file_path):
         Return ONLY valid JSON, no markdown or additional text.
         """
         
-        print(f"[CV_METADATA] Sending prompt to Gemini API with CV text length: {len(cv_text)}")
+        print(f"[CV_METADATA] Calling multi-provider AI...")
         
-        # Try to get available model
-        try:
-            available_models = [m for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-            if available_models:
-                model_name = available_models[0].name
-                print(f"[CV_METADATA] Using model: {model_name}")
-                model = genai.GenerativeModel(model_name)
-            else:
-                raise ValueError("No available models support content generation")
-        except Exception as e:
-            print(f"[CV_METADATA] Model selection error: {str(e)}")
-            # Fallback to trying common model names
-            model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        # Try multiple AI providers with fallback
+        response_text, provider_used = call_multi_provider_ai(prompt, cv_text)
         
-        response = model.generate_content(prompt)
-        response_text = response.text
+        if not response_text:
+            return {
+                "error": "All AI services are currently unavailable. Please try again later.",
+                "years_of_experience": 0,
+                "skills": [],
+                "education": [],
+                "work_experience": []
+            }
         
-        print(f"[CV_PARSER] Gemini response length: {len(response_text)}")
-        print(f"[CV_PARSER] Gemini response (first 500 chars): {response_text[:500]}")
+        print(f"[CV_PARSER] Response from {provider_used}, length: {len(response_text)}")
+        print(f"[CV_PARSER] Response (first 500 chars): {response_text[:500]}")
         
         # Try to parse JSON response
         try:
@@ -199,13 +467,18 @@ def extract_cv_metadata(cv_file_path):
             # Try to parse JSON
             metadata = json.loads(response_text)
             print(f"[CV_PARSER] Successfully parsed metadata with keys: {list(metadata.keys())}")
+            
+            # Add file hash and provider info for caching
+            metadata['_file_hash'] = file_hash
+            metadata['_ai_provider'] = provider_used
+            
             return metadata
         except json.JSONDecodeError as e:
             print(f"[CV_PARSER] JSON parsing error: {str(e)}")
             print(f"[CV_PARSER] Response that failed to parse: {response_text[:500]}")
             # Return a basic default structure instead of raw response
             return {
-                "error": "Failed to parse CV metadata. Please try uploading again.",
+                "error": "AI analysis could not parse the CV format. Please ensure your CV is properly formatted with clear sections (Experience, Education, Skills, etc.).",
                 "years_of_experience": 0,
                 "skills": [],
                 "education": [],
@@ -221,7 +494,7 @@ def extract_cv_metadata(cv_file_path):
         # Check if it's a rate limit error
         if "429" in error_str or "quota" in error_str.lower():
             return {
-                "error": "Gemini API rate limit exceeded. Please try again later.",
+                "error": "AI service is currently at capacity. Please try uploading your CV again in a few moments. If this persists, please contact support.",
                 "years_of_experience": 0,
                 "skills": [],
                 "education": [],
