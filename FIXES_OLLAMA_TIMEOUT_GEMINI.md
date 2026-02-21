@@ -146,13 +146,6 @@ Look for one of these messages (in order):
    curl http://localhost:11434/api/tags
    # Should return JSON with model list
    ```
-
-### If Gemini fails:
-1. **Check API key is correct** in `.env`:
-   ```
-   GEMINI_API_KEY=AIzaSyBy6ALnbQkItc8wHItveURpQQflC27OIuY
-   ```
-
 2. **Check rate limit**:
    - Gemini free tier: 15 requests per minute
    - If hitting limit, wait 1 minute between uploads
